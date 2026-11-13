@@ -12,6 +12,11 @@ export interface Command {
   category: CommandCategory
   /** Um ou mais atalhos, ex.: ["Ctrl+Shift+Z", "Ctrl+Y"]. */
   shortcuts?: string[]
+  /**
+   * Atalho apenas exibido (não ligado ao teclado pelo registro). Usado por copiar/recortar/colar,
+   * que são tratados pelos eventos do navegador para funcionar entre abas.
+   */
+  hint?: string
   description?: string
   run: () => void
   /** Se retornar false, o comando aparece desativado e o atalho é ignorado. */

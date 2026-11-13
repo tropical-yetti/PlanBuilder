@@ -9,6 +9,8 @@ export const C = {
   roomHighlight: 'rgba(37, 99, 235, 0.16)',
   roomName: '#1f2937',
   roomAuto: '#6b7280',
+  annotation: '#374151',
+  measure: '#f97316',
   gridMinor: '#eef0f4',
   gridMid: '#e3e7ed',
   gridMajor: '#d2d8e1',

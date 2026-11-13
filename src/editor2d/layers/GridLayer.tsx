@@ -1,5 +1,5 @@
 import type { Context } from 'konva/lib/Context'
-import { Layer, Shape } from 'react-konva'
+import { Group, Shape } from 'react-konva'
 import type { View2D } from '../../store/editorStore'
 import { C } from '../theme'
 
@@ -39,8 +39,8 @@ export function GridLayer({ view, width, height }: Props) {
   }
 
   return (
-    <Layer listening={false}>
+    <Group listening={false}>
       <Shape sceneFunc={sceneFunc} />
-    </Layer>
+    </Group>
   )
 }

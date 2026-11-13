@@ -33,6 +33,8 @@ export interface ProjectState {
   cancel: () => void
   undo: () => void
   redo: () => void
+  /** Volta (ou avança) até ficar com `count` passos feitos. */
+  goTo: (count: number) => void
   /** Substitui o documento (novo projeto, abrir arquivo) e limpa o histórico. */
   load: (project: Project) => void
 }
@@ -129,6 +131,13 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       future: future.slice(0, -1),
       revision: revision + 1,
     })
+  },
+
+  goTo(count) {
+    get().commit()
+    const target = Math.max(0, Math.min(count, get().past.length + get().future.length))
+    while (get().past.length > target) get().undo()
+    while (get().past.length < target) get().redo()
   },
 
   load(project) {

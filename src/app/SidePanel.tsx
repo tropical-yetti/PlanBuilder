@@ -1,10 +1,12 @@
 import { useEditorStore, type SidePanelTab } from '../store/editorStore'
 import { AreasPanel } from './AreasPanel'
+import { HistoryPanel } from './HistoryPanel'
 import { PropertiesPanel } from './PropertiesPanel'
 
 const TABS: { id: SidePanelTab; label: string }[] = [
   { id: 'properties', label: 'Propriedades' },
   { id: 'areas', label: 'Áreas' },
+  { id: 'history', label: 'Histórico' },
 ]
 
 export function SidePanel() {
@@ -27,11 +29,7 @@ export function SidePanel() {
         ))}
       </div>
       <div className="tab-body" role="tabpanel">
-        {tab === 'properties' ? (
-          <PropertiesPanel />
-        ) : (
-          <AreasPanel />
-        )}
+        {tab === 'properties' ? <PropertiesPanel /> : tab === 'areas' ? <AreasPanel /> : <HistoryPanel />}
       </div>
     </section>
   )

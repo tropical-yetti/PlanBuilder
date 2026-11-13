@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ROOM_NAME_SUGGESTIONS, renameRoom } from '../model/roomNames'
 import type { Room } from '../model/quantities'
 import { useEditorStore, worldToScreen } from '../store/editorStore'
@@ -7,11 +7,16 @@ import { useProjectStore } from '../store/projectStore'
 /** Campo de texto sobre a planta para dar nome ao cômodo (duplo clique dentro dele). */
 export function RoomNameEditor({ room }: { room: Room }) {
   const view = useEditorStore((s) => s.view)
-  const close = () => useEditorStore.getState().setRenamingRoom(null)
+  const closed = useRef(false)
+  const close = () => {
+    closed.current = true
+    useEditorStore.getState().setRenamingRoom(null)
+  }
   const [text, setText] = useState(room.named ? room.name : '')
   const at = worldToScreen(view, room.labelPoint)
 
   function commit() {
+    if (closed.current) return
     const current = room.named ? room.name : ''
     if (text.trim() !== current) {
       useProjectStore.getState().update('Cômodo renomeado', (d) => renameRoom(d, room, text))

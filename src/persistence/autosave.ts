@@ -3,9 +3,12 @@
  * Versão simples, antecipada da fase 5: lá entram migrações de versão, salvar/abrir arquivo e avisos.
  */
 import { SCHEMA_VERSION, type Project } from '../model/types'
+import { DEFAULT_LAYERS, useEditorStore, type Layers } from '../store/editorStore'
 import { useProjectStore } from '../store/projectStore'
 
 export const AUTOSAVE_KEY = 'planbuilder:autosave'
+/** Preferências de exibição (camadas visíveis): guardadas à parte, não fazem parte do projeto. */
+export const VIEW_KEY = 'planbuilder:view'
 const DELAY_MS = 500
 
 interface Saved {
@@ -48,10 +51,35 @@ export function writeAutosave(project: Project, storage: Storage | undefined = g
   }
 }
 
+export function loadLayers(storage: Storage | undefined = globalThis.localStorage): Layers {
+  try {
+    const saved = JSON.parse(storage?.getItem(VIEW_KEY) ?? '{}') as { layers?: Partial<Layers> }
+    const layers = { ...DEFAULT_LAYERS }
+    for (const key of Object.keys(layers) as (keyof Layers)[]) {
+      if (typeof saved.layers?.[key] === 'boolean') layers[key] = saved.layers[key]
+    }
+    return layers
+  } catch {
+    return { ...DEFAULT_LAYERS }
+  }
+}
+
+export function saveLayers(layers: Layers, storage: Storage | undefined = globalThis.localStorage): void {
+  try {
+    storage?.setItem(VIEW_KEY, JSON.stringify({ layers }))
+  } catch {
+    // sem espaço ou bloqueado: a preferência só não é lembrada
+  }
+}
+
 /** Restaura o último projeto e passa a salvar a cada alteração. Retorna a função que desliga. */
 export function startAutosave(): () => void {
   const restored = loadAutosave()
   if (restored) useProjectStore.getState().load(restored)
+  useEditorStore.getState().setLayers(loadLayers())
+  const unsubscribeView = useEditorStore.subscribe((s, prev) => {
+    if (s.layers !== prev.layers) saveLayers(s.layers)
+  })
 
   let timer: ReturnType<typeof setTimeout> | undefined
   const flush = () => {
@@ -71,6 +99,7 @@ export function startAutosave(): () => void {
   window.addEventListener('pagehide', onHide)
   return () => {
     unsubscribe()
+    unsubscribeView()
     window.removeEventListener('pagehide', onHide)
     clearTimeout(timer)
   }

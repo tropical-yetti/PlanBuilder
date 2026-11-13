@@ -15,10 +15,10 @@ export const TOOLS: ToolInfo[] = [
   { id: 'select', label: 'Selecionar', shortcut: 'V', hint: 'Clique seleciona · Shift+clique adiciona · arraste no vazio para selecionar em caixa · arraste a parede para movê-la · duplo clique na parede insere um nó · duplo clique no cômodo edita o nome', available: true },
   { id: 'wall', label: 'Parede', shortcut: 'W', hint: 'Clique para iniciar · clique para cada canto · digite o comprimento + Enter · Shift trava 15° · Alt desliga os snaps · Esc encerra', available: true },
   { id: 'room', label: 'Cômodo retangular', shortcut: 'A', hint: 'Clique e arraste para criar um cômodo · após o 1º canto, digite 400x300 + Enter (medidas pelo eixo das paredes)', available: true },
-  { id: 'erase', label: 'Excluir', shortcut: 'E', hint: 'Clique na parede, porta ou janela que deseja excluir', available: true },
-  { id: 'measure', label: 'Medir', shortcut: 'M', hint: 'Clique em dois pontos para medir a distância', available: false },
-  { id: 'dimension', label: 'Cota', shortcut: 'D', hint: 'Clique em dois pontos para criar uma cota', available: false },
-  { id: 'text', label: 'Texto', shortcut: 'T', hint: 'Clique na planta para inserir um texto', available: false },
+  { id: 'erase', label: 'Excluir', shortcut: 'E', hint: 'Clique no objeto que deseja excluir', available: true },
+  { id: 'measure', label: 'Medir', shortcut: 'M', hint: 'Clique em dois pontos para medir a distância · Shift trava o ângulo · a medida não é salva · Esc limpa', available: true },
+  { id: 'dimension', label: 'Cota', shortcut: 'D', hint: 'Clique nos dois pontos a medir e depois onde a linha de cota deve ficar · Esc cancela', available: true },
+  { id: 'text', label: 'Texto', shortcut: 'T', hint: 'Clique na planta para escrever · clique num texto para editar · Enter confirma', available: true },
 ]
 
 /** Inserção de componentes: ativada pela biblioteca, não aparece na barra de ferramentas. */
