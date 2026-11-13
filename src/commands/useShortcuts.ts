@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useEditorStore } from '../store/editorStore'
 import type { CommandRegistry } from './registry'
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -18,6 +19,8 @@ export function useShortcuts(registry: CommandRegistry): void {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented || isTypingTarget(e.target)) return
+      // Com uma janela (paleta, atalhos) aberta, os atalhos do editor ficam em pausa.
+      if (useEditorStore.getState().dialog) return
       const cmd = registry.findByEvent(e)
       if (!cmd) return
       // Mesmo desativado, o atalho é consumido para o navegador não agir (ex.: Ctrl+S salvar página).

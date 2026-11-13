@@ -1,5 +1,5 @@
 import type { Context } from 'konva/lib/Context'
-import { Group, Layer, Shape } from 'react-konva'
+import { Group, Shape } from 'react-konva'
 import { getComponent } from '../../library/registry'
 import type { Prim } from '../../library/types'
 import type { OpeningShape } from '../openingShapes'
@@ -68,10 +68,10 @@ export function OpeningGlyph({ s, pxPerCm }: { s: OpeningShape; pxPerCm: number 
 
 export function OpeningLayer({ shapes, pxPerCm }: { shapes: OpeningShape[]; pxPerCm: number }) {
   return (
-    <Layer listening={false}>
+    <Group listening={false}>
       {shapes.map((s) => (
         <OpeningGlyph key={s.key} s={s} pxPerCm={pxPerCm} />
       ))}
-    </Layer>
+    </Group>
   )
 }

@@ -6,7 +6,55 @@ export type ToolId = 'select' | 'wall' | 'room' | 'erase' | 'measure' | 'dimensi
 
 export type ViewMode = '2d' | 'split' | '3d'
 
-export type SidePanelTab = 'properties' | 'areas'
+export type SidePanelTab = 'properties' | 'areas' | 'history'
+
+/** O que aparece no desenho 2D (menu Camadas). */
+export interface Layers {
+  grid: boolean
+  /** Comprimento de cada parede. */
+  autoDimensions: boolean
+  /** Cotas manuais. */
+  dimensions: boolean
+  texts: boolean
+  openings: boolean
+  /** Nomes e áreas dos cômodos. */
+  roomLabels: boolean
+}
+
+export const LAYER_LABELS: Record<keyof Layers, string> = {
+  grid: 'Grade',
+  autoDimensions: 'Medidas das paredes',
+  dimensions: 'Cotas',
+  texts: 'Textos',
+  openings: 'Portas e janelas',
+  roomLabels: 'Nomes e áreas dos cômodos',
+}
+
+export const DEFAULT_LAYERS: Layers = { grid: true, autoDimensions: true, dimensions: true, texts: true, openings: true, roomLabels: true }
+
+/** Objeto (ou lugar) em que o menu de contexto foi aberto. */
+export interface ContextTarget {
+  /** Posição na página, para desenhar o menu. */
+  page: Point
+  /** Posição no mundo (cm). */
+  world: Point
+  /** Objeto sob o cursor, se houver. */
+  id: Id | null
+  /** Cômodo sob o cursor, se houver. */
+  roomKey: string | null
+}
+
+export type Dialog =
+  | { kind: 'palette' }
+  | { kind: 'shortcuts' }
+  | { kind: 'prompt'; title: string; label: string; suffix?: string; initial: string; onSubmit: (value: number) => void }
+
+/** Texto sendo criado (id null) ou editado sobre a planta. */
+export interface TextEdit {
+  id: Id | null
+  at: Point
+  initial: string
+}
 
 /** Transformação da vista 2D: tela = mundo × scale + (x, y). `scale` em pixels por centímetro. */
 export interface View2D {
@@ -30,6 +78,10 @@ export interface EditorState {
   selection: Id[]
   /** Chave do cômodo cujo nome está sendo editado sobre a planta. */
   renamingRoom: string | null
+  layers: Layers
+  contextMenu: ContextTarget | null
+  dialog: Dialog | null
+  textEdit: TextEdit | null
   /** Tamanho do canvas 2D em pixels (0 enquanto não montado). */
   canvasSize: { width: number; height: number }
 
@@ -44,6 +96,11 @@ export interface EditorState {
   setSelection: (ids: Id[]) => void
   setCanvasSize: (size: { width: number; height: number }) => void
   setRenamingRoom: (key: string | null) => void
+  toggleLayer: (layer: keyof Layers) => void
+  setLayers: (layers: Layers) => void
+  setContextMenu: (target: ContextTarget | null) => void
+  setDialog: (dialog: Dialog | null) => void
+  setTextEdit: (edit: TextEdit | null) => void
 }
 
 export const useEditorStore = create<EditorState>()((set, get) => ({
@@ -55,6 +112,10 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
   selection: [],
   canvasSize: { width: 0, height: 0 },
   renamingRoom: null,
+  layers: { ...DEFAULT_LAYERS },
+  contextMenu: null,
+  dialog: null,
+  textEdit: null,
 
   setTool: (tool) => set(tool === 'place' ? { tool } : { tool, placing: null }),
   startPlacing: (componentId) => set({ tool: 'place', placing: componentId }),
@@ -70,6 +131,11 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
   setSelection: (selection) => set({ selection }),
   setCanvasSize: (canvasSize) => set({ canvasSize }),
   setRenamingRoom: (renamingRoom) => set({ renamingRoom }),
+  toggleLayer: (layer) => set({ layers: { ...get().layers, [layer]: !get().layers[layer] } }),
+  setLayers: (layers) => set({ layers }),
+  setContextMenu: (contextMenu) => set({ contextMenu }),
+  setDialog: (dialog) => set({ dialog }),
+  setTextEdit: (textEdit) => set({ textEdit }),
 }))
 
 export const screenToWorld = (v: View2D, s: Point): Point => ({ x: (s.x - v.x) / v.scale, y: (s.y - v.y) / v.scale })

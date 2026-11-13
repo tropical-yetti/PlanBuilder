@@ -1,13 +1,14 @@
 import { useEditorStore, type ToolId } from '../../store/editorStore'
 import { useInteractionStore } from '../interactionStore'
+import { createDimensionTool } from './dimensionTool'
 import { createEraseTool } from './eraseTool'
+import { createMeasureTool } from './measureTool'
 import { createPlaceTool } from './placeTool'
 import { createRoomTool } from './roomTool'
 import { createSelectTool } from './selectTool'
+import { createTextTool } from './textTool'
 import type { Tool } from './types'
 import { createWallTool } from './wallTool'
-
-const idle: Tool = { cursor: () => 'default' }
 
 export const tools: Record<ToolId, Tool> = {
   select: createSelectTool(),
@@ -15,10 +16,9 @@ export const tools: Record<ToolId, Tool> = {
   room: createRoomTool(),
   erase: createEraseTool(),
   place: createPlaceTool(),
-  // Medir, Cota e Texto chegam na fase 4 (feat/produtividade).
-  measure: idle,
-  dimension: idle,
-  text: idle,
+  measure: createMeasureTool(),
+  dimension: createDimensionTool(),
+  text: createTextTool(),
 }
 
 export const activeTool = (): Tool => tools[useEditorStore.getState().tool]

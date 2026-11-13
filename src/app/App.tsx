@@ -1,7 +1,10 @@
 import '../commands/setup'
 import { commands } from '../commands/registry'
+import { useClipboardEvents } from '../commands/useClipboardEvents'
 import { useShortcuts } from '../commands/useShortcuts'
 import { LibraryPanel } from '../library/LibraryPanel'
+import { ContextMenu } from './ContextMenu'
+import { Dialogs } from './Dialogs'
 import { SidePanel } from './SidePanel'
 import { StatusBar } from './StatusBar'
 import { ToolBar } from './ToolBar'
@@ -10,6 +13,7 @@ import { Workspace } from './Workspace'
 
 export function App() {
   useShortcuts(commands)
+  useClipboardEvents()
 
   return (
     <div className="app">
@@ -19,6 +23,8 @@ export function App() {
       <Workspace />
       <SidePanel />
       <StatusBar />
+      <ContextMenu />
+      <Dialogs />
     </div>
   )
 }

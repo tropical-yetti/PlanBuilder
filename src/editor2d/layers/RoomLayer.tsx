@@ -1,5 +1,5 @@
 import type { Context } from 'konva/lib/Context'
-import { Group, Layer, Shape, Text } from 'react-konva'
+import { Group, Shape, Text } from 'react-konva'
 import type { Room } from '../../model/quantities'
 import { formatArea } from '../../model/units'
 import { C } from '../theme'
@@ -10,14 +10,15 @@ interface Props {
   highlighted: string | null
   /** Cômodo sendo renomeado: o rótulo some para dar lugar ao campo de texto. */
   editing: string | null
+  showLabels: boolean
 }
 
 const LABEL_W = 160
 
 /** Piso dos cômodos detectados, com nome e área no centro. */
-export function RoomLayer({ rooms, pxPerCm: k, highlighted, editing }: Props) {
+export function RoomLayer({ rooms, pxPerCm: k, highlighted, editing, showLabels }: Props) {
   return (
-    <Layer listening={false}>
+    <Group listening={false}>
       {rooms.map((room) => {
         const sceneFunc = (ctx: Context) => {
           ctx.beginPath()
@@ -31,7 +32,7 @@ export function RoomLayer({ rooms, pxPerCm: k, highlighted, editing }: Props) {
           ctx.fill('evenodd')
         }
         // Em cômodos pequenos na tela, o rótulo atrapalharia mais do que ajuda.
-        const showLabel = Math.sqrt(room.area) * k >= 70 && room.key !== editing
+        const showLabel = showLabels && Math.sqrt(room.area) * k >= 70 && room.key !== editing
         return (
           <Group key={room.key}>
             <Shape sceneFunc={sceneFunc} />
@@ -65,6 +66,6 @@ export function RoomLayer({ rooms, pxPerCm: k, highlighted, editing }: Props) {
           </Group>
         )
       })}
-    </Layer>
+    </Group>
   )
 }

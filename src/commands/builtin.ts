@@ -2,8 +2,9 @@ import { TOOLS } from '../app/tools'
 import { fitView, zoom100 } from '../editor2d/view'
 import { getComponent } from '../library/registry'
 import { midpoint } from '../model/geometry'
-import { centerOpening, commonWall, deleteOpening, distributeOpenings, openingsOnWall } from '../model/openings'
-import { canMergeWalls, deleteWall, mergeWalls, nodePos, splitWall } from '../model/walls'
+import { centerOpening, commonWall, distributeOpenings, openingsOnWall } from '../model/openings'
+import { allSelectable, deleteLabel, deleteObjects } from '../model/selection'
+import { canMergeWalls, mergeWalls, nodePos, splitWall } from '../model/walls'
 import type { Id } from '../model/types'
 import { useEditorStore } from '../store/editorStore'
 import { selectCanRedo, selectCanUndo, useProjectStore } from '../store/projectStore'
@@ -18,10 +19,7 @@ export function registerBuiltinCommands(registry: CommandRegistry): () => void {
   /** Paredes selecionadas que ainda existem (a seleção pode apontar para algo desfeito). */
   const selectedWalls = (): Id[] => editor().selection.filter((id) => !!project().project.walls[id])
   const selectedOpenings = (): Id[] => editor().selection.filter((id) => !!project().project.openings[id])
-  const deleteLabel = (walls: number, openings: number): string => {
-    if (walls + openings > 1) return walls === 0 ? 'Aberturas excluídas' : openings === 0 ? 'Paredes excluídas' : 'Seleção excluída'
-    return walls === 1 ? 'Parede excluída' : 'Abertura excluída'
-  }
+  const selected = (): Id[] => allSelectable(project().project).filter((id) => editor().selection.includes(id))
 
   const disposers = [
     // Arquivo (implementados na fase 5: feat/persistencia)
@@ -54,22 +52,18 @@ export function registerBuiltinCommands(registry: CommandRegistry): () => void {
       category: 'Editar',
       shortcuts: ['Del', 'Backspace'],
       run: () => {
-        const walls = selectedWalls()
-        const openings = selectedOpenings()
-        project().update(deleteLabel(walls.length, openings.length), (d) => {
-          for (const id of openings) deleteOpening(d, id)
-          for (const id of walls) deleteWall(d, id)
-        })
+        const ids = selected()
+        project().update(deleteLabel(project().project, ids), (d) => deleteObjects(d, ids))
         editor().setSelection([])
       },
-      isEnabled: () => selectedWalls().length + selectedOpenings().length > 0,
+      isEnabled: () => selected().length > 0,
     }),
     registry.register({
       id: 'edit.selectAll',
       label: 'Selecionar tudo',
       category: 'Editar',
       shortcuts: ['Ctrl+A'],
-      run: () => editor().setSelection([...Object.keys(project().project.walls), ...Object.keys(project().project.openings)]),
+      run: () => editor().setSelection(allSelectable(project().project)),
     }),
     registry.register({
       id: 'edit.clearSelection',

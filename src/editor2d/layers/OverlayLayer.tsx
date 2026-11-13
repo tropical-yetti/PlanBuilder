@@ -8,6 +8,7 @@ import type { Id, Point, Project } from '../../model/types'
 import type { InteractionState } from '../interactionStore'
 import type { SnapResult } from '../snapping'
 import { C } from '../theme'
+import { DimensionGlyph } from './AnnotationLayer'
 import { OpeningGlyph } from './OpeningLayer'
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
   selected: Set<Id>
   interaction: Pick<InteractionState, 'snap' | 'draft' | 'typed' | 'box' | 'hover'>
   showNodeHandles: boolean
+  showWallLengths: boolean
 }
 
 /** Texto com tamanho fixo em pixels, posicionado no mundo. */
@@ -191,7 +193,7 @@ function EndDistances({
   )
 }
 
-export function OverlayLayer({ project, polygons, pxPerCm: k, selected, interaction, showNodeHandles }: Props) {
+export function OverlayLayer({ project, polygons, pxPerCm: k, selected, interaction, showNodeHandles, showWallLengths }: Props) {
   const { snap, draft, typed, box, hover } = interaction
   const thickness = project.settings.defaultWallThickness
 
@@ -213,7 +215,8 @@ export function OverlayLayer({ project, polygons, pxPerCm: k, selected, interact
       {/* Cotas automáticas: comprimento de cada parede pelo eixo */}
       {polygons.map((w) => {
         const length = dist(w.a, w.b)
-        if (length * k < 48) return null
+        // Com a camada oculta, só as paredes selecionadas mostram a medida.
+        if (length * k < 48 || (!showWallLengths && !selected.has(w.wallId))) return null
         const thick = project.walls[w.wallId]?.thickness ?? thickness
         const at = add(midpoint(w.a, w.b), scale(labelSide(w.a, w.b), thick / 2 + 10 / k))
         return (
@@ -251,6 +254,17 @@ export function OverlayLayer({ project, polygons, pxPerCm: k, selected, interact
         const o = project.openings[id]
         return o ? <EndDistances key={id} project={project} o={o} k={k} color={C.accent} /> : null
       })}
+
+      {draft?.kind === 'measure' && (
+        <Group>
+          <Line points={[draft.a.x, draft.a.y, draft.b.x, draft.b.y]} stroke={C.measure} strokeWidth={1.5} strokeScaleEnabled={false} dash={[6 / k, 4 / k]} />
+          {[draft.a, draft.b].map((q, i) => (
+            <Circle key={i} x={q.x} y={q.y} radius={3 / k} fill={C.measure} />
+          ))}
+          <ScreenLabel at={midpoint(draft.a, draft.b)} k={k} pill text={formatMeters(dist(draft.a, draft.b))} />
+        </Group>
+      )}
+      {draft?.kind === 'dimension' && <DimensionGlyph d={draft} k={k} color={C.accent} />}
 
       {draft?.kind === 'room' && <DraftRoom a={draft.a} b={draft.b} thickness={thickness} k={k} typed={typed} />}
 

@@ -23,8 +23,13 @@ export type Draft =
   | { kind: 'wall'; a: Point; b: Point }
   | { kind: 'room'; a: Point; b: Point }
   | OpeningDraft
+  /** Fita métrica temporária. */
+  | { kind: 'measure'; a: Point; b: Point }
+  /** Cota em criação: depois dos dois pontos, o cursor define o afastamento. */
+  | { kind: 'dimension'; p1: Point; p2: Point; offset: number }
 
-export type HoverTarget = { kind: 'wall'; id: Id } | { kind: 'node'; id: Id } | { kind: 'opening'; id: Id }
+export type HoverKind = 'wall' | 'node' | 'opening' | 'text' | 'dimension'
+export type HoverTarget = { kind: HoverKind; id: Id }
 
 /**
  * Estado passageiro da interação no canvas (cursor, prévia, caixa de seleção).

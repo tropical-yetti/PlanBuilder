@@ -282,3 +282,58 @@ describe('inserir portas e janelas', () => {
     expect(doc().project.openings[id]).toBeUndefined()
   })
 })
+
+describe('medir, cota e texto', () => {
+  it('medir mostra a distância sem alterar o projeto', () => {
+    ed().setTool('measure')
+    click('measure', 0, 0)
+    tools.measure.onPointerMove?.(ev(300, 0))
+    click('measure', 300, 0)
+    expect(useInteractionStore.getState().draft).toEqual({ kind: 'measure', a: { x: 0, y: 0 }, b: { x: 300, y: 0 } })
+    expect(doc().past).toHaveLength(0)
+    expect(key('measure', 'Escape')).toBe(true)
+    expect(useInteractionStore.getState().draft).toBeNull()
+  })
+
+  it('cota: dois pontos e o afastamento', () => {
+    ed().setTool('dimension')
+    click('dimension', 0, 0)
+    click('dimension', 400, 0)
+    click('dimension', 200, -42) // 42 cm acima → arredonda para 40, do lado de cima
+    const dims = Object.values(doc().project.dimensions)
+    expect(dims).toHaveLength(1)
+    expect(dims[0]).toMatchObject({ p1: { x: 0, y: 0 }, p2: { x: 400, y: 0 }, offset: -40 })
+    expect(ed().selection).toEqual([dims[0]!.id])
+  })
+
+  it('texto: clicar abre o campo de edição no ponto', () => {
+    ed().setTool('text')
+    click('text', 120.4, 80.6)
+    expect(ed().textEdit).toEqual({ id: null, at: { x: 120, y: 81 }, initial: '' })
+    ed().setTool('select')
+    expect(ed().textEdit).toBeNull()
+  })
+
+  it('arrastar com vários objetos selecionados move tudo, em um passo', () => {
+    doc().update('setup', (d) => {
+      drawWallSegment(d, { x: 0, y: 0 }, { x: 200, y: 0 })
+      drawWallSegment(d, { x: 0, y: 100 }, { x: 200, y: 100 })
+    })
+    ed().setSelection(Object.keys(doc().project.walls))
+    const steps = doc().past.length
+    drag('select', [100, 0], [150, 30])
+    expect(segments(doc().project)).toEqual(['250,130-50,130', '250,30-50,30'])
+    expect(doc().past.length).toBe(steps + 1)
+  })
+
+  it('objetos bloqueados não são selecionados por clique nem por caixa', () => {
+    doc().update('setup', (d) => {
+      const [w] = drawWallSegment(d, { x: 0, y: 0 }, { x: 200, y: 0 }).wallIds
+      d.walls[w!]!.locked = true
+    })
+    click('select', 100, 0)
+    expect(ed().selection).toEqual([])
+    drag('select', [300, 100], [-100, -100])
+    expect(ed().selection).toEqual([])
+  })
+})

@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent as RDragEvent, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent } from 'react'
-import { Stage } from 'react-konva'
-import { quantities } from '../model/quantities'
+import { Layer, Stage } from 'react-konva'
+import { quantities, roomAt } from '../model/quantities'
 import { wallPolygons } from '../model/wallGeometry'
 import { screenToWorld, useEditorStore } from '../store/editorStore'
 import { useProjectStore } from '../store/projectStore'
 import { useInteractionStore } from './interactionStore'
+import { hitTest } from './hitTest'
+import { AnnotationLayer } from './layers/AnnotationLayer'
 import { GridLayer } from './layers/GridLayer'
 import { OpeningLayer } from './layers/OpeningLayer'
 import { openingShapes } from './openingShapes'
 import { OverlayLayer } from './layers/OverlayLayer'
 import { RoomLayer } from './layers/RoomLayer'
 import { RoomNameEditor } from './RoomNameEditor'
+import { TextEditor } from './TextEditor'
 import { WallLayer } from './layers/WallLayer'
 import { C } from './theme'
 import { activeTool, tools } from './tools'
@@ -42,13 +45,15 @@ export function Canvas2D() {
   const hover = useInteractionStore((s) => s.hover)
   const highlightRoom = useInteractionStore((s) => s.highlightRoom)
   const renamingKey = useEditorStore((s) => s.renamingRoom)
+  const layers = useEditorStore((s) => s.layers)
+  const textEdit = useEditorStore((s) => s.textEdit)
   const rooms = quantities(project).rooms
   const renamingRoom = renamingKey ? rooms.find((r) => r.key === renamingKey) : undefined
 
   const polygons = useMemo(() => [...wallPolygons(project).values()], [project])
   const selected = useMemo(
-    () => new Set(selection.filter((id) => project.walls[id] || project.openings[id])),
-    [selection, project.walls, project.openings],
+    () => new Set(selection.filter((id) => project.walls[id] || project.openings[id] || project.texts[id] || project.dimensions[id])),
+    [selection, project.walls, project.openings, project.texts, project.dimensions],
   )
   const hoveredOpening = hover?.kind === 'opening' ? hover.id : null
   const openings = useMemo(
@@ -81,7 +86,7 @@ export function Canvas2D() {
   // Teclado: a ferramenta ativa tem prioridade (ex.: digitar a medida, Esc) sobre os atalhos globais.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target)) return
+      if (isTypingTarget(e.target) || useEditorStore.getState().dialog) return
       if (e.code === 'Space') {
         e.preventDefault()
         setSpaceDown(true)
@@ -188,6 +193,18 @@ export function Canvas2D() {
     useEditorStore.getState().setTool('select')
   }
 
+  // Botão direito: seleciona o objeto sob o cursor (se ainda não estiver) e abre o menu de contexto.
+  function onContextMenu(e: RMouseEvent) {
+    e.preventDefault()
+    const i = info(e)
+    const state = useEditorStore.getState()
+    const p = useProjectStore.getState().project
+    const hit = hitTest(p, i.world, state.view.scale, { nodes: false, includeLocked: true })
+    if (hit && !state.selection.includes(hit.id)) state.setSelection([hit.id])
+    if (!hit) state.setSelection([])
+    state.setContextMenu({ page: { x: e.clientX, y: e.clientY }, world: i.world, id: hit?.id ?? null, roomKey: hit ? null : (roomAt(p, i.world)?.key ?? null) })
+  }
+
   const hoverColor = toolId === 'erase' ? C.wallErase : C.wallHover
   const hoveredWall = hover?.kind === 'wall' ? hover.id : null
   const cursor = panning ? 'grabbing' : spaceDown ? 'grab' : tools[toolId].cursor()
@@ -203,17 +220,34 @@ export function Canvas2D() {
       onPointerUp={onPointerUp}
       onPointerLeave={onPointerLeave}
       onDoubleClick={(e) => activeTool().onDoubleClick?.(info(e))}
-      onContextMenu={(e) => e.preventDefault()}
+      onContextMenu={onContextMenu}
+      // O foco é controlado à mão (no pointerdown): sem isto, o clique tiraria o foco de um campo recém-aberto sobre a planta.
+      onMouseDown={(e) => e.preventDefault()}
       onDragOver={onDragOver}
       onDrop={onDrop}
       data-testid="canvas2d"
     >
       {size.width > 0 && (
         <Stage width={size.width} height={size.height} x={view.x} y={view.y} scaleX={view.scale} scaleY={view.scale} listening={false}>
-          <GridLayer view={view} width={size.width} height={size.height} />
-          <RoomLayer rooms={rooms} pxPerCm={view.scale} highlighted={highlightRoom} editing={renamingRoom?.key ?? null} />
+          {/* Poucas camadas (cada uma é um canvas): fundo, paredes, objetos e sobreposições. */}
+          <Layer listening={false}>
+          {layers.grid && <GridLayer view={view} width={size.width} height={size.height} />}
+          <RoomLayer rooms={rooms} pxPerCm={view.scale} highlighted={highlightRoom} editing={renamingRoom?.key ?? null} showLabels={layers.roomLabels} />
+          </Layer>
           <WallLayer polygons={polygons} selected={selected} hovered={hoveredWall} hoverColor={hoverColor} />
-          <OpeningLayer shapes={openings} pxPerCm={view.scale} />
+          <Layer listening={false}>
+          {layers.openings && <OpeningLayer shapes={openings} pxPerCm={view.scale} />}
+          <AnnotationLayer
+            project={project}
+            pxPerCm={view.scale}
+            selected={selected}
+            hovered={hover?.kind === 'text' || hover?.kind === 'dimension' ? hover.id : null}
+            hoverColor={hoverColor}
+            showDimensions={layers.dimensions}
+            showTexts={layers.texts}
+            editingText={textEdit?.id ?? null}
+          />
+          </Layer>
           <OverlayLayer
             project={project}
             polygons={polygons}
@@ -221,10 +255,12 @@ export function Canvas2D() {
             selected={selected}
             interaction={{ snap, draft, typed, box, hover }}
             showNodeHandles={toolId === 'select'}
+            showWallLengths={layers.autoDimensions}
           />
         </Stage>
       )}
       {renamingRoom && <RoomNameEditor key={renamingRoom.key} room={renamingRoom} />}
+      {textEdit && <TextEditor key={`${textEdit.id}-${textEdit.at.x}-${textEdit.at.y}`} edit={textEdit} />}
     </div>
   )
 }
