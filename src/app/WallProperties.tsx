@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { commands } from '../commands/registry'
 import { WALL_LIMITS } from '../model/limits'
+import { fitOpeningsToWalls } from '../model/openings'
 import { formatMeters } from '../model/units'
 import { canMergeWalls, connectMovedNodes, setNodePositions, setWallLengthPositions, wallLength, type LengthAnchor } from '../model/walls'
 import type { Id, Wall } from '../model/types'
@@ -70,6 +71,7 @@ export function WallProperties() {
               update('Comprimento alterado', (d) => {
                 setNodePositions(d, setWallLengthPositions(d, single.id, v, anchor))
                 connectMovedNodes(d, [single.a, single.b])
+                fitOpeningsToWalls(d)
               })
             }
           />

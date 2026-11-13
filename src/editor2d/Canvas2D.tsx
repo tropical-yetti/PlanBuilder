@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent as RDragEvent, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent } from 'react'
 import { Stage } from 'react-konva'
 import { wallPolygons } from '../model/wallGeometry'
 import { screenToWorld, useEditorStore } from '../store/editorStore'
 import { useProjectStore } from '../store/projectStore'
 import { useInteractionStore } from './interactionStore'
 import { GridLayer } from './layers/GridLayer'
+import { OpeningLayer } from './layers/OpeningLayer'
+import { openingShapes } from './openingShapes'
 import { OverlayLayer } from './layers/OverlayLayer'
 import { WallLayer } from './layers/WallLayer'
 import { C } from './theme'
@@ -37,7 +39,18 @@ export function Canvas2D() {
   const hover = useInteractionStore((s) => s.hover)
 
   const polygons = useMemo(() => [...wallPolygons(project).values()], [project])
-  const selected = useMemo(() => new Set(selection.filter((id) => project.walls[id])), [selection, project.walls])
+  const selected = useMemo(
+    () => new Set(selection.filter((id) => project.walls[id] || project.openings[id])),
+    [selection, project.walls, project.openings],
+  )
+  const hoveredOpening = hover?.kind === 'opening' ? hover.id : null
+  const openings = useMemo(
+    () =>
+      openingShapes(project, (id) =>
+        selected.has(id) ? C.accent : hoveredOpening === id ? (toolId === 'erase' ? C.invalid : C.wallHover) : C.opening,
+      ),
+    [project, selected, hoveredOpening, toolId],
+  )
 
   // Tamanho do canvas acompanha o contêiner; na primeira medição, enquadra o desenho.
   useEffect(() => {
@@ -101,7 +114,7 @@ export function Canvas2D() {
     return () => el.removeEventListener('wheel', onWheel)
   }, [])
 
-  function info(e: RPointerEvent | RMouseEvent): PointerInfo {
+  function info(e: RPointerEvent | RMouseEvent | RDragEvent): PointerInfo {
     const r = containerRef.current!.getBoundingClientRect()
     const screen = { x: e.clientX - r.left, y: e.clientY - r.top }
     return {
@@ -153,6 +166,21 @@ export function Canvas2D() {
     if (!panRef.current) useInteractionStore.getState().set({ cursor: null, hover: null, snap: draft ? snap : null })
   }
 
+  // Arrastar um componente da biblioteca para a planta: usa a mesma lógica da ferramenta de inserção.
+  function onDragOver(e: RDragEvent) {
+    if (useEditorStore.getState().tool !== 'place') return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+    tools.place.onPointerMove?.(info(e))
+  }
+
+  function onDrop(e: RDragEvent) {
+    if (useEditorStore.getState().tool !== 'place') return
+    e.preventDefault()
+    tools.place.onPointerDown?.({ ...info(e), button: 0 })
+    useEditorStore.getState().setTool('select')
+  }
+
   const hoverColor = toolId === 'erase' ? C.wallErase : C.wallHover
   const hoveredWall = hover?.kind === 'wall' ? hover.id : null
   const cursor = panning ? 'grabbing' : spaceDown ? 'grab' : tools[toolId].cursor()
@@ -169,12 +197,15 @@ export function Canvas2D() {
       onPointerLeave={onPointerLeave}
       onDoubleClick={(e) => activeTool().onDoubleClick?.(info(e))}
       onContextMenu={(e) => e.preventDefault()}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
       data-testid="canvas2d"
     >
       {size.width > 0 && (
         <Stage width={size.width} height={size.height} x={view.x} y={view.y} scaleX={view.scale} scaleY={view.scale} listening={false}>
           <GridLayer view={view} width={size.width} height={size.height} />
           <WallLayer polygons={polygons} selected={selected} hovered={hoveredWall} hoverColor={hoverColor} />
+          <OpeningLayer shapes={openings} pxPerCm={view.scale} />
           <OverlayLayer
             project={project}
             polygons={polygons}

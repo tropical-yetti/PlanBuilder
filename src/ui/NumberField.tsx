@@ -11,13 +11,15 @@ interface Props {
   suffix?: string
   disabled?: boolean
   title?: string
+  /** Regra extra além de min/max (ex.: a porta precisa caber na parede). */
+  validate?: (cm: number) => boolean
 }
 
 /**
  * Campo numérico de medida. Confirma com Enter ou ao sair do campo; Esc desfaz a digitação.
  * Setas ↑/↓ somam 1 cm (Shift: 10 cm). Aceita "350", "3,5m", "35mm".
  */
-export function NumberField({ label, value, onCommit, min = 0, max = Infinity, suffix = 'cm', disabled, title }: Props) {
+export function NumberField({ label, value, onCommit, min = 0, max = Infinity, suffix = 'cm', disabled, title, validate }: Props) {
   const shown = value === null ? '' : formatCmValue(value)
   const [text, setText] = useState(shown)
   const [invalid, setInvalid] = useState(false)
@@ -36,7 +38,7 @@ export function NumberField({ label, value, onCommit, min = 0, max = Infinity, s
       return
     }
     const v = parseLength(raw)
-    if (v === null || v < min || v > max) {
+    if (v === null || v < min || v > max || (validate && !validate(v))) {
       setInvalid(true)
       return
     }
@@ -56,7 +58,7 @@ export function NumberField({ label, value, onCommit, min = 0, max = Infinity, s
       e.preventDefault()
       const step = (e.shiftKey ? 10 : 1) * (e.key === 'ArrowUp' ? 1 : -1)
       const next = Math.min(max, Math.max(min, value + step))
-      onCommit(next)
+      if (!validate || validate(next)) onCommit(next)
     }
   }
 

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { Id, Point } from '../model/types'
 
 /** Ferramentas do editor 2D (docs/PLANO.md, seção 3). */
-export type ToolId = 'select' | 'wall' | 'room' | 'erase' | 'measure' | 'dimension' | 'text'
+export type ToolId = 'select' | 'wall' | 'room' | 'erase' | 'measure' | 'dimension' | 'text' | 'place'
 
 export type ViewMode = '2d' | 'split' | '3d'
 
@@ -21,6 +21,8 @@ export const MAX_SCALE = 8
 /** Estado da interface: não faz parte do documento e não entra no desfazer/refazer. */
 export interface EditorState {
   tool: ToolId
+  /** Componente da biblioteca sendo inserido (ferramenta "place"). */
+  placing: string | null
   viewMode: ViewMode
   sidePanelTab: SidePanelTab
   view: View2D
@@ -30,6 +32,8 @@ export interface EditorState {
   canvasSize: { width: number; height: number }
 
   setTool: (tool: ToolId) => void
+  /** Começa a inserir um componente da biblioteca. */
+  startPlacing: (componentId: string) => void
   setViewMode: (mode: ViewMode) => void
   setSidePanelTab: (tab: SidePanelTab) => void
   setView: (view: View2D) => void
@@ -41,13 +45,15 @@ export interface EditorState {
 
 export const useEditorStore = create<EditorState>()((set, get) => ({
   tool: 'select',
+  placing: null,
   viewMode: '2d',
   sidePanelTab: 'properties',
   view: { x: 0, y: 0, scale: 1 },
   selection: [],
   canvasSize: { width: 0, height: 0 },
 
-  setTool: (tool) => set({ tool }),
+  setTool: (tool) => set(tool === 'place' ? { tool } : { tool, placing: null }),
+  startPlacing: (componentId) => set({ tool: 'place', placing: componentId }),
   setViewMode: (viewMode) => set({ viewMode }),
   setSidePanelTab: (sidePanelTab) => set({ sidePanelTab }),
   setView: (view) => set({ view }),

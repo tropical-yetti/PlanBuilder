@@ -1,12 +1,14 @@
 import { dist, dot, normalize, perp, sub } from '../../model/geometry'
-import { connectMovedNodes, nodePos, nodesOfWalls, otherNode, parallelMovePositions, setNodePositions, splitWall, wallsAtNode } from '../../model/walls'
+import { fitOpeningsToWalls, moveOpening } from '../../model/openings'
+import { connectMovedNodes, nodePos, openingCenter, wallEnds, wallLength, nodesOfWalls, otherNode, parallelMovePositions, setNodePositions, splitWall, wallsAtNode } from '../../model/walls'
 import type { Id, Point, Project } from '../../model/types'
-import { hitTest, hitWall, wallsInBox } from '../hitTest'
+import { hitTest, hitWall, openingsInBox, wallsInBox } from '../hitTest'
+import { nearestWall, snapOffset } from './placeTool'
 import { snapPoint } from '../snapping'
 import { docStore, editor, project, pxPerCm, ui } from './context'
 import type { PointerInfo, Tool } from './types'
 
-type Mode = 'idle' | 'node' | 'wall' | 'box' | 'none'
+type Mode = 'idle' | 'node' | 'wall' | 'opening' | 'box' | 'none'
 
 /** Distância mínima (px) para um clique virar arraste. */
 const DRAG_PX = 4
@@ -15,6 +17,7 @@ const DRAG_PX = 4
  * Selecionar: clique seleciona; Shift+clique adiciona/remove; arrastar no vazio faz caixa de seleção.
  * Arrastar um canto move o canto; arrastar uma parede a move em paralelo (as vizinhas esticam);
  * com várias paredes selecionadas, arrastar move todas juntas. Duplo clique na parede insere um nó.
+ * Arrastar uma porta ou janela a desliza pela parede (ou a leva para outra parede).
  */
 export function createSelectTool(): Tool {
   let mode: Mode = 'idle'
@@ -25,6 +28,9 @@ export function createSelectTool(): Tool {
   let nodeId: Id | null = null
   let wallId: Id | null = null
   let dragWalls: Id[] = []
+  let openingId: Id | null = null
+  /** Distância, ao longo da parede, entre o ponto agarrado e o centro da abertura. */
+  let grab = 0
 
   function end() {
     mode = 'idle'
@@ -33,6 +39,7 @@ export function createSelectTool(): Tool {
     nodeId = null
     wallId = null
     dragWalls = []
+    openingId = null
     ui().set({ box: null, snap: null })
   }
 
@@ -75,12 +82,33 @@ export function createSelectTool(): Tool {
     }
   }
 
+  function dragOpening(e: PointerInfo) {
+    const p = project()
+    const o = p.openings[openingId!]
+    if (!o) return
+    const k = pxPerCm()
+    // Fica na própria parede enquanto o cursor estiver perto dela; senão, pula para a parede sob o cursor.
+    const own = p.walls[o.wallId]!
+    const [oa, ob] = wallEnds(p, own)
+    const ownDist = Math.abs(dot(sub(e.world, oa), perp(normalize(sub(ob, oa)))))
+    const near = nearestWall(p, e.world, k)
+    const target = near && near.wallId !== o.wallId && ownDist > own.thickness / 2 + 30 / k ? p.walls[near.wallId]! : own
+    const [a, b] = wallEnds(p, target)
+    const along = dot(sub(e.world, a), normalize(sub(b, a)))
+    const raw = target.id === o.wallId ? along - grab : along
+    const offset = snapOffset(p, target.id, Math.max(0, Math.min(wallLength(p, target), raw)), o.width, k, e.alt)
+    if (offset === null) return
+    const id = o.id
+    // Se a posição estiver ocupada, a abertura simplesmente fica na última posição válida.
+    docStore().update('Abertura movida', (d) => void moveOpening(d, id, target.id, offset))
+  }
+
   return {
     cursor() {
-      if (mode === 'wall' && moved) return 'grabbing'
+      if ((mode === 'wall' || mode === 'opening') && moved) return 'grabbing'
       const h = ui().hover
       if (h?.kind === 'node') return 'move'
-      if (h?.kind === 'wall') return 'pointer'
+      if (h?.kind === 'wall' || h?.kind === 'opening') return 'pointer'
       return 'default'
     },
 
@@ -96,6 +124,20 @@ export function createSelectTool(): Tool {
       if (hit?.kind === 'node') {
         mode = 'node'
         nodeId = hit.id
+        return
+      }
+      if (hit?.kind === 'opening') {
+        if (e.shift) {
+          toggle(hit.id)
+          mode = 'none'
+          return
+        }
+        if (!editor().selection.includes(hit.id)) editor().setSelection([hit.id])
+        mode = 'opening'
+        openingId = hit.id
+        const o = p.openings[hit.id]!
+        const [a, b] = wallEnds(p, p.walls[o.wallId]!)
+        grab = dot(sub(e.world, openingCenter(p, o)), normalize(sub(b, a)))
         return
       }
       if (hit?.kind === 'wall') {
@@ -125,9 +167,11 @@ export function createSelectTool(): Tool {
         moved = true
         if (mode === 'node') docStore().begin('Canto movido')
         if (mode === 'wall') docStore().begin(dragWalls.length > 1 ? 'Paredes movidas' : 'Parede movida')
+        if (mode === 'opening') docStore().begin('Abertura movida')
       }
       if (mode === 'node') dragNode(e)
       else if (mode === 'wall') dragWall(e)
+      else if (mode === 'opening') dragOpening(e)
       else if (mode === 'box') ui().set({ box: { a: pressWorld, b: e.world } })
     },
 
@@ -135,7 +179,10 @@ export function createSelectTool(): Tool {
       if (mode === 'node') {
         if (moved) {
           const id = nodeId!
-          docStore().update('Canto movido', (d) => connectMovedNodes(d, [id]))
+          docStore().update('Canto movido', (d) => {
+            connectMovedNodes(d, [id])
+            fitOpeningsToWalls(d)
+          })
           docStore().commit()
         } else {
           // Clique num canto sem arrastar: seleciona a parede sob ele, se houver.
@@ -146,12 +193,20 @@ export function createSelectTool(): Tool {
       } else if (mode === 'wall') {
         if (moved) {
           const ids = dragWalls.length > 1 ? dragWalls : [wallId!]
-          docStore().update('Parede movida', (d) => connectMovedNodes(d, nodesOfWalls(d, ids)))
+          docStore().update('Parede movida', (d) => {
+            connectMovedNodes(d, nodesOfWalls(d, ids))
+            fitOpeningsToWalls(d)
+          })
           docStore().commit()
         }
+      } else if (mode === 'opening') {
+        if (moved) docStore().commit()
       } else if (mode === 'box') {
         if (moved) {
-          const ids = wallsInBox(project(), pressWorld, e.world, e.world.x < pressWorld.x)
+          const ids = [
+            ...wallsInBox(project(), pressWorld, e.world, e.world.x < pressWorld.x),
+            ...openingsInBox(project(), pressWorld, e.world),
+          ]
           const sel = e.shift ? [...new Set([...editor().selection, ...ids])] : ids
           editor().setSelection(sel)
         } else if (!e.shift) {
@@ -163,6 +218,7 @@ export function createSelectTool(): Tool {
 
     onDoubleClick(e) {
       const p = project()
+      if (hitTest(p, e.world, pxPerCm(), { nodes: false })?.kind === 'opening') return
       const id = hitWall(p, e.world, pxPerCm())
       if (!id) return
       const w = p.walls[id]!
@@ -178,7 +234,7 @@ export function createSelectTool(): Tool {
 
     onKeyDown(e) {
       if (e.key === 'Escape' && mode !== 'idle') {
-        if (moved && (mode === 'node' || mode === 'wall')) docStore().cancel()
+        if (moved && (mode === 'node' || mode === 'wall' || mode === 'opening')) docStore().cancel()
         end()
         return true
       }
@@ -186,7 +242,7 @@ export function createSelectTool(): Tool {
     },
 
     onDeactivate() {
-      if (moved && (mode === 'node' || mode === 'wall')) docStore().commit()
+      if (moved && (mode === 'node' || mode === 'wall' || mode === 'opening')) docStore().commit()
       end()
       ui().set({ hover: null })
     },

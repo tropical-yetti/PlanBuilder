@@ -2,11 +2,29 @@ import { create } from 'zustand'
 import type { Id, Point } from '../model/types'
 import type { SnapResult } from './snapping'
 
+export interface OpeningDraft {
+  kind: 'opening'
+  componentId: string
+  /** Parede onde a abertura vai ficar; null enquanto o cursor está longe de qualquer parede. */
+  wallId: Id | null
+  at: Point
+  /** Ângulo da parede em graus. */
+  angle: number
+  offset: number
+  width: number
+  thickness: number
+  flipSide: boolean
+  flipHinge: boolean
+  /** Falso quando não cabe ou se sobrepõe a outra abertura (desenhada em vermelho, não pode ser solta). */
+  valid: boolean
+}
+
 export type Draft =
   | { kind: 'wall'; a: Point; b: Point }
   | { kind: 'room'; a: Point; b: Point }
+  | OpeningDraft
 
-export type HoverTarget = { kind: 'wall'; id: Id } | { kind: 'node'; id: Id }
+export type HoverTarget = { kind: 'wall'; id: Id } | { kind: 'node'; id: Id } | { kind: 'opening'; id: Id }
 
 /**
  * Estado passageiro da interação no canvas (cursor, prévia, caixa de seleção).
