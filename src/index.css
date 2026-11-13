@@ -311,3 +311,146 @@ button {
 .status-spacer {
   flex: 1;
 }
+
+/* Canvas 2D */
+.view-2d {
+  position: relative;
+  display: block;
+  background: var(--canvas);
+}
+
+.canvas2d {
+  position: absolute;
+  inset: 0;
+  outline: none;
+  touch-action: none;
+  user-select: none;
+}
+
+.tool:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.tool:disabled:hover {
+  background: transparent;
+}
+
+/* Barra de status */
+.status-coords {
+  font-variant-numeric: tabular-nums;
+}
+
+.status-zoom {
+  height: 20px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-zoom:hover {
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* Painel de propriedades */
+.props {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+.props-title {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.props .empty {
+  margin: 4px 0 0;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 1fr 130px;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-label {
+  color: var(--muted);
+}
+
+.field-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.field-input {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.field-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.field.invalid .field-input {
+  border-color: #dc2626;
+}
+
+.field-input input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+
+.field-suffix {
+  padding-right: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.segmented.small button {
+  flex: 1;
+  height: 24px;
+  padding: 0 6px;
+  font-size: 12px;
+}
+
+.props-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.btn.outline {
+  border-color: var(--border);
+  background: var(--panel);
+}
+
+.btn.outline:hover:not(:disabled) {
+  border-color: #c9ced6;
+}
+
+.btn.danger {
+  color: #dc2626;
+}
