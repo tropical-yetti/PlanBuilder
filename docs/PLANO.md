@@ -281,6 +281,8 @@ Ao fim de cada fase o app funciona e pode ser usado.
 | 4 | `feat/vista-3d` | Vista 3D e modo dividido, paredes com vãos, modelos simples de porta/janela, órbita da câmera, PNG do 3D | Toda edição no 2D aparece no 3D imediatamente |
 | 5 | `feat/acabamento` | Onboarding curto, atalhos documentados, mensagens de erro, testes E2E dos fluxos principais, ajustes de desempenho | Fluxo completo (desenhar → portas/janelas → 3D → salvar → reabrir → PNG) coberto por teste E2E |
 
+Release: tornar o repositório público, adicionar o workflow de deploy no GitHub Pages (`base` do Vite = `/PlanBuilder/`) e ativar Settings → Pages → Source: GitHub Actions.
+
 Depois do MVP: `feat/ambientes-area`, `feat/biblioteca-banheiro`, `feat/biblioteca-cozinha`, `feat/biblioteca-moveis`, `feat/biblioteca-eletrodomesticos`.
 
 ---
@@ -300,4 +302,4 @@ Depois do MVP: `feat/ambientes-area`, `feat/biblioteca-banheiro`, `feat/bibliote
 | Desempenho com plantas grandes | Konva com camadas separadas (grade estática, paredes, interação); 3D regenerado só para paredes alteradas |
 | Formato do arquivo mudar com o tempo | `schemaVersion` + migrações desde a versão 1 |
 | Touch/tablet | Fluxo "clicar item → clicar parede" além do arrastar; botões de ferramenta grandes |
-| Hospedagem | O build é estático. GitHub Pages em repositório privado exige plano pago; alternativas: Netlify/Vercel/Cloudflare Pages ou abrir o build localmente |
+| Hospedagem | Decidido: publicar no **GitHub Pages só na fase de release**. Como a conta é Free, o repositório será tornado público nesse momento (Pages em repo privado exige plano pago). Até lá, o app roda localmente (`npm run dev` / `npm run preview`). O workflow de deploy do Pages entra junto com o release, não antes |
