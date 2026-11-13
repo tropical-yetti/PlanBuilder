@@ -203,3 +203,82 @@ describe('ferramenta Excluir', () => {
     expect(counts(doc().project)).toEqual({ nodes: 0, walls: 0 })
   })
 })
+
+describe('inserir portas e janelas', () => {
+  beforeEach(() => {
+    doc().update('setup', (d) => {
+      drawRectRoom(d, { x: 0, y: 0 }, { x: 400, y: 300 })
+    })
+  })
+  const openings = () => Object.values(doc().project.openings)
+
+  it('clique perto da parede insere a porta presa a ela, abrindo para o lado do cursor', () => {
+    ed().startPlacing('door.swing-single')
+    click('place', 150, 20) // abaixo da parede de cima (lado de dentro)
+    expect(openings()).toHaveLength(1)
+    const o = openings()[0]!
+    expect(o.componentId).toBe('door.swing-single')
+    expect(o.width).toBe(80)
+    expect(ed().selection).toEqual([o.id])
+    expect(doc().past.at(-1)!.label).toBe('Porta inserida')
+    // do outro lado da parede, o lado de abertura inverte
+    click('place', 300, -20)
+    expect(openings()).toHaveLength(2)
+    expect(openings()[1]!.flipSide).toBe(!o.flipSide)
+  })
+
+  it('gruda no centro da parede', () => {
+    ed().startPlacing('window.sliding')
+    click('place', 204, 5)
+    expect(openings()[0]!.offset).toBe(200)
+    expect(openings()[0]!.sillHeight).toBe(100)
+    expect(openings()[0]!.params).toEqual({ leaves: 2 })
+  })
+
+  it('não insere longe das paredes nem em cima de outra abertura', () => {
+    ed().startPlacing('door.swing-single')
+    click('place', 200, 150)
+    expect(openings()).toHaveLength(0)
+    click('place', 200, 5)
+    click('place', 230, 5)
+    expect(openings()).toHaveLength(1)
+    expect(useInteractionStore.getState().draft).toMatchObject({ kind: 'opening', valid: false })
+  })
+
+  it('perto da ponta, a abertura é trazida para dentro da parede', () => {
+    ed().startPlacing('door.swing-single')
+    click('place', 10, 5)
+    expect(openings()).toHaveLength(1)
+    const o = openings()[0]!
+    const w = doc().project.walls[o.wallId]!
+    const fromA = doc().project.nodes[w.a]!.x === 0
+    expect(fromA ? o.offset : 400 - o.offset).toBe(45) // 5 cm de margem + meia largura
+  })
+
+  it('Esc sai do modo de inserção', () => {
+    ed().startPlacing('door.swing-single')
+    expect(key('place', 'Escape')).toBe(true)
+    expect(ed().tool).toBe('select')
+    expect(ed().placing).toBeNull()
+  })
+
+  it('arrastar a abertura a desliza pela parede; excluir a parede leva a abertura junto', () => {
+    ed().startPlacing('door.swing-single')
+    click('place', 200, 5)
+    ed().setTool('select')
+    const id = openings()[0]!.id
+    const before = openings()[0]!.offset
+    drag('select', [200, 0], [260, 0])
+    expect(Math.abs(openings()[0]!.offset - before)).toBe(60)
+    expect(doc().past.at(-1)!.label).toBe('Abertura movida')
+    // levar para outra parede
+    drag('select', [openings()[0]!.offset === 260 ? 260 : 140, 0], [400, 150])
+    const o = openings()[0]!
+    const w = doc().project.walls[o.wallId]!
+    expect(doc().project.nodes[w.a]!.x).toBe(400)
+    expect(doc().project.nodes[w.b]!.x).toBe(400)
+    ed().setTool('erase')
+    click('erase', 400, 20)
+    expect(doc().project.openings[id]).toBeUndefined()
+  })
+})

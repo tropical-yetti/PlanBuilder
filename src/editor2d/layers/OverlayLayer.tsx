@@ -1,11 +1,14 @@
 import { Circle, Group, Label, Layer, Line, Rect, Tag, Text } from 'react-konva'
 import { add, angleOf, dist, midpoint, normalize, perp, scale, sub } from '../../model/geometry'
-import { formatMeters } from '../../model/units'
+import { distancesToEnds } from '../../model/openings'
+import { formatCm, formatMeters } from '../../model/units'
+import { wallEnds } from '../../model/walls'
 import type { WallPolygon } from '../../model/wallGeometry'
 import type { Id, Point, Project } from '../../model/types'
 import type { InteractionState } from '../interactionStore'
 import type { SnapResult } from '../snapping'
 import { C } from '../theme'
+import { OpeningGlyph } from './OpeningLayer'
 
 interface Props {
   project: Project
@@ -146,6 +149,48 @@ function DraftRoom({ a, b, thickness, k, typed }: { a: Point; b: Point; thicknes
   )
 }
 
+/**
+ * Distâncias da abertura até as duas pontas da parede, mostradas ao inserir, mover ou selecionar.
+ * Ficam do lado oposto ao que a porta abre, para não cobrir o símbolo.
+ */
+function EndDistances({
+  project,
+  o,
+  k,
+  color,
+}: {
+  project: Project
+  o: { wallId: Id; offset: number; width: number; flipSide: boolean }
+  k: number
+  color: string
+}) {
+  const w = project.walls[o.wallId]
+  if (!w) return null
+  const [a, b] = wallEnds(project, w)
+  const dir = normalize(sub(b, a))
+  const side = scale(perp(dir), (o.flipSide ? 1 : -1) * (w.thickness / 2 + 12 / k))
+  const d = distancesToEnds(project, o)
+  const spans: [number, number][] = [
+    [0, d.start],
+    [o.offset + o.width / 2, d.end],
+  ]
+  return (
+    <Group>
+      {spans.map(([from, length], i) => {
+        if (length * k < 26) return null
+        const p0 = add(add(a, scale(dir, from)), side)
+        const p1 = add(p0, scale(dir, length))
+        return (
+          <Group key={i}>
+            <Line points={[p0.x, p0.y, p1.x, p1.y]} stroke={color} strokeWidth={1} strokeScaleEnabled={false} />
+            <ScreenLabel at={midpoint(p0, p1)} k={k} angle={readableAngle(a, b)} text={formatCm(length)} color={color} />
+          </Group>
+        )
+      })}
+    </Group>
+  )
+}
+
 export function OverlayLayer({ project, polygons, pxPerCm: k, selected, interaction, showNodeHandles }: Props) {
   const { snap, draft, typed, box, hover } = interaction
   const thickness = project.settings.defaultWallThickness
@@ -190,6 +235,23 @@ export function OverlayLayer({ project, polygons, pxPerCm: k, selected, interact
       })}
 
       {draft?.kind === 'wall' && <DraftWall a={draft.a} b={draft.b} thickness={thickness} k={k} typed={typed} />}
+      {draft?.kind === 'opening' && (
+        <Group>
+          <OpeningGlyph
+            pxPerCm={k}
+            s={{ ...draft, key: 'draft', params: {}, color: draft.wallId && !draft.valid ? C.invalid : C.accent, ghost: true }}
+          />
+          {draft.wallId && <EndDistances project={project} o={{ ...draft, wallId: draft.wallId }} k={k} color={draft.valid ? C.accent : C.invalid} />}
+        </Group>
+      )}
+
+      {/* Distâncias das aberturas selecionadas até as pontas da parede */}
+      {draft?.kind !== 'opening' &&
+        [...selected].map((id) => {
+        const o = project.openings[id]
+        return o ? <EndDistances key={id} project={project} o={o} k={k} color={C.accent} /> : null
+      })}
+
       {draft?.kind === 'room' && <DraftRoom a={draft.a} b={draft.b} thickness={thickness} k={k} typed={typed} />}
 
       {snap && <SnapMarker snap={snap} k={k} />}

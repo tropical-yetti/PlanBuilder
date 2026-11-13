@@ -1,5 +1,10 @@
 /** Cores do desenho 2D. */
 export const C = {
+  canvas: '#fbfbfc',
+  glass: '#dbeafe',
+  leaf: '#ffffff',
+  opening: '#1f2937',
+  invalid: '#dc2626',
   gridMinor: '#eef0f4',
   gridMid: '#e3e7ed',
   gridMajor: '#d2d8e1',

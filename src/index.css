@@ -454,3 +454,123 @@ button {
 .btn.danger {
   color: #dc2626;
 }
+
+/* Biblioteca */
+.lib-category-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.lib-category-head:hover:not(:disabled) {
+  background: var(--bg);
+}
+
+.lib-category-head.soon {
+  color: var(--muted);
+  font-weight: 400;
+  cursor: default;
+}
+
+.lib-category-name {
+  flex: 1;
+}
+
+.chevron {
+  width: 12px;
+  color: var(--muted);
+}
+
+.lib-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 4px 12px 10px;
+}
+
+.lib-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  cursor: grab;
+  text-align: center;
+}
+
+.lib-card:hover {
+  border-color: var(--accent);
+}
+
+.lib-card.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.lib-name {
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.lib-size {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Propriedades de aberturas */
+.props-subtitle {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.field-select {
+  height: 30px;
+  min-width: 0;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  font: inherit;
+}
+
+.chips {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: -4px;
+}
+
+.chip {
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--panel);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chip.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

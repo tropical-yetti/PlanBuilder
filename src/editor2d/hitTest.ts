@@ -1,4 +1,5 @@
-import { dist, pointInPolygon, projectOnSegment, rectFromPoints, pointInRect, segmentIntersectsRect } from '../model/geometry'
+import { dist, dot, normalize, perp, pointInPolygon, projectOnSegment, rectFromPoints, pointInRect, segmentIntersectsRect, sub } from '../model/geometry'
+import { openingCenter } from '../model/walls'
 import { wallPolygons } from '../model/wallGeometry'
 import type { Id, Point, Project } from '../model/types'
 import type { HoverTarget } from './interactionStore'
@@ -33,11 +34,28 @@ export function hitWall(p: Project, point: Point, pxPerCm: number): Id | null {
   return best?.id ?? null
 }
 
+/** Abertura (porta/janela) sob o cursor: dentro do vão, em toda a espessura da parede. */
+export function hitOpening(p: Project, point: Point, pxPerCm: number): Id | null {
+  const tol = HIT_PX / pxPerCm
+  for (const o of Object.values(p.openings)) {
+    const w = p.walls[o.wallId]
+    const a = w && p.nodes[w.a]
+    const b = w && p.nodes[w.b]
+    if (!w || !a || !b) continue
+    const dir = normalize(sub(b, a))
+    const rel = sub(point, openingCenter(p, o))
+    if (Math.abs(dot(rel, dir)) <= o.width / 2 && Math.abs(dot(rel, perp(dir))) <= w.thickness / 2 + tol) return o.id
+  }
+  return null
+}
+
 export function hitTest(p: Project, point: Point, pxPerCm: number, opts: { nodes?: boolean } = {}): HoverTarget | null {
   if (opts.nodes !== false) {
     const n = hitNode(p, point, pxPerCm)
     if (n) return { kind: 'node', id: n }
   }
+  const o = hitOpening(p, point, pxPerCm)
+  if (o) return { kind: 'opening', id: o }
   const w = hitWall(p, point, pxPerCm)
   return w ? { kind: 'wall', id: w } : null
 }
@@ -65,4 +83,12 @@ export function wallsInBox(p: Project, a: Point, b: Point, touching: boolean): I
     }
   }
   return ids
+}
+
+/** Aberturas cujo centro está dentro da caixa. */
+export function openingsInBox(p: Project, a: Point, b: Point): Id[] {
+  const r = rectFromPoints(a, b)
+  return Object.values(p.openings)
+    .filter((o) => p.walls[o.wallId] && pointInRect(openingCenter(p, o), r))
+    .map((o) => o.id)
 }

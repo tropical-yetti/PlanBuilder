@@ -1,6 +1,7 @@
 import { useEditorStore, type ToolId } from '../../store/editorStore'
 import { useInteractionStore } from '../interactionStore'
 import { createEraseTool } from './eraseTool'
+import { createPlaceTool } from './placeTool'
 import { createRoomTool } from './roomTool'
 import { createSelectTool } from './selectTool'
 import type { Tool } from './types'
@@ -13,6 +14,7 @@ export const tools: Record<ToolId, Tool> = {
   wall: createWallTool(),
   room: createRoomTool(),
   erase: createEraseTool(),
+  place: createPlaceTool(),
   // Medir, Cota e Texto chegam na fase 4 (feat/produtividade).
   measure: idle,
   dimension: idle,
