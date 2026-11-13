@@ -19,4 +19,7 @@ export const doorOpenPassage: ComponentDef = {
       { t: 'line', pts: [-w / 2, t / 2, w / 2, t / 2], dash: true, thin: true },
     ]
   },
+  model() {
+    return []
+  },
 }

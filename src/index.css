@@ -1092,3 +1092,42 @@ kbd {
   flex-direction: column;
   gap: 2px;
 }
+
+/* Vista 3D */
+.view-3d {
+  position: relative;
+}
+
+.scene3d {
+  position: absolute;
+  inset: 0;
+}
+
+.scene3d canvas {
+  display: block;
+  touch-action: none;
+}
+
+.scene3d-empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+}
+
+.scene3d-tools {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.scene3d-hint {
+  position: absolute;
+  left: 12px;
+  bottom: 8px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  pointer-events: none;
+}

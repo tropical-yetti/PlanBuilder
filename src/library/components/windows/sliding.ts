@@ -1,3 +1,4 @@
+import { FRAME, frameBoxes, glass, mullion } from '../../model3d'
 import type { ComponentDef, Prim } from '../../types'
 import { frame, WINDOW_LIMITS } from './shared'
 
@@ -39,5 +40,19 @@ export const windowSliding: ComponentDef = {
       prims.push({ t: 'line', pts: [x0, y, x1, y] })
     }
     return prims
+  },
+  model({ width: w, height: h, thickness: t, params }) {
+    const n = Math.min(4, Math.max(2, Number(params.leaves) || 2))
+    const inner = w - 2 * FRAME
+    const leaf = inner / n
+    const boxes = frameBoxes(w, h, t, true)
+    // folhas alternadas em dois trilhos, cada uma com seu montante
+    for (let i = 0; i < n; i++) {
+      const x0 = -inner / 2 + i * leaf
+      const z = i % 2 === 0 ? -1.5 : 1.5
+      boxes.push(glass(x0, x0 + leaf, h, z))
+      if (i > 0) boxes.push(mullion(x0, h, z, 3))
+    }
+    return boxes
   },
 }

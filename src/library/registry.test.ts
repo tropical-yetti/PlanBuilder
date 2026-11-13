@@ -35,6 +35,23 @@ describe('biblioteca', () => {
     }
   })
 
+  it('todo modelo 3D cabe no vão e só tem medidas válidas', () => {
+    for (const c of COMPONENTS) {
+      const { width, height } = c.defaults
+      const boxes = c.model({ width, height, thickness: 15, params: c.defaults.params })
+      if (c.id !== 'door.open-passage') expect(boxes.length, c.id).toBeGreaterThan(0)
+      for (const b of boxes) {
+        expect([b.x, b.y, b.z, b.w, b.h, b.d].every(Number.isFinite), c.id).toBe(true)
+        expect(b.w > 0 && b.h > 0 && b.d > 0, c.id).toBe(true)
+        // batente e vidro ficam dentro do vão (folhas de correr e trilhos podem passar para fora)
+        if (b.mat === 'glass') {
+          expect(Math.abs(b.x) + b.w / 2, c.id).toBeLessThanOrEqual(width / 2 + 1e-6)
+          expect(b.y + b.h / 2, c.id).toBeLessThanOrEqual(height + 1e-6)
+        }
+      }
+    }
+  })
+
   it('busca por nome, palavra-chave e categoria, sem depender de acentos', () => {
     expect(searchComponents('vao').map((c) => c.id)).toEqual(['door.open-passage'])
     expect(searchComponents('correr').map((c) => c.id)).toEqual(['door.sliding', 'window.sliding'])

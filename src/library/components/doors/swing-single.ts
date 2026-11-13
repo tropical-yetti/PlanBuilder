@@ -1,3 +1,4 @@
+import { doorLeaf, FRAME, frameBoxes } from '../../model3d'
 import type { ComponentDef } from '../../types'
 
 export const doorSwingSingle: ComponentDef = {
@@ -20,5 +21,8 @@ export const doorSwingSingle: ComponentDef = {
       { t: 'rect', x: hx, y: hy, w: 4, h: w, fill: 'leaf' },
       { t: 'arc', cx: hx, cy: hy, r: w, a0: Math.PI / 2, a1: 0, thin: true },
     ]
+  },
+  model({ width: w, height: h, thickness: t }) {
+    return [...frameBoxes(w, h, t), doorLeaf(-w / 2 + FRAME, 1, w - 2 * FRAME, h)]
   },
 }

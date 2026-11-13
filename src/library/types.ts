@@ -25,6 +25,31 @@ export interface SymbolInput {
   params: Record<string, unknown>
 }
 
+/**
+ * Peça do modelo 3D: uma caixa, em centímetros, no sistema local da abertura:
+ * x ao longo da parede (origem no centro do vão), y para cima a partir da base do vão,
+ * z atravessando a parede (positivo = lado para onde abre).
+ */
+export interface Box3 {
+  /** Centro da caixa. */
+  x: number
+  y: number
+  z: number
+  /** Tamanho ao longo da parede, na altura e na espessura. */
+  w: number
+  h: number
+  d: number
+  mat: 'frame' | 'leaf' | 'glass'
+  /** Folha entreaberta: gira em torno do eixo vertical que passa por `pivot`, `angle` graus para o lado de abertura. */
+  pivot?: { x: number; z: number }
+  angle?: number
+}
+
+export interface ModelInput extends SymbolInput {
+  /** Altura do vão. */
+  height: number
+}
+
 export type ParamField =
   | { key: string; label: string; type: 'select'; options: { value: string | number; label: string }[] }
   | { key: string; label: string; type: 'boolean' }
@@ -53,4 +78,6 @@ export interface ComponentDef {
   paramsSchema?: ParamField[]
   /** Símbolo de planta. */
   symbol(input: SymbolInput): Prim[]
+  /** Modelo 3D simples (batente, folhas, vidro). */
+  model(input: ModelInput): Box3[]
 }

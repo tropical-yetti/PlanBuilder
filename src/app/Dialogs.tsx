@@ -6,6 +6,7 @@ import { parseLength } from '../model/units'
 import { DEFAULT_EXPORT, type ExportOptions } from '../persistence/exportLayout'
 import { download } from '../persistence/fileIO'
 import { fileNameFor } from '../persistence/schema'
+import { canCapture3D, capture3D } from '../viewer3d/capture'
 import { useEditorStore, type Dialog } from '../store/editorStore'
 import { useProjectStore } from '../store/projectStore'
 
@@ -256,16 +257,23 @@ const EXPORT_CHECKS: { key: 'wallLengths' | 'roomLabels' | 'areaTable' | 'grid';
 function ExportPng() {
   const [options, setOptions] = useState<ExportOptions>(lastExport)
   const [busy, setBusy] = useState(false)
+  // A vista 3D só pode ser exportada enquanto está aberta (modo 3D ou Dividido).
+  const has3D = canCapture3D()
+  const [source, setSource] = useState<'2d' | '3d'>(has3D && useEditorStore.getState().viewMode === '3d' ? '3d' : '2d')
 
   async function run() {
     setBusy(true)
     lastExport = options
     const project = useProjectStore.getState().project
-    const name = fileNameFor(project.name, '.png')
+    const name = fileNameFor(source === '3d' ? `${project.name} 3D` : project.name, '.png')
     try {
-      // Carregado só quando necessário: a exportação monta o desenho fora da tela.
-      const { renderPng } = await import('../persistence/exportPng')
-      download(await renderPng(project, options), name)
+      if (source === '3d') {
+        download(await capture3D(options.pixelRatio), name)
+      } else {
+        // Carregado só quando necessário: a exportação monta o desenho fora da tela.
+        const { renderPng } = await import('../persistence/exportPng')
+        download(await renderPng(project, options), name)
+      }
       close()
       useEditorStore.getState().notify(`Imagem exportada como "${name}".`)
     } catch (e) {
@@ -278,8 +286,25 @@ function ExportPng() {
     <Modal title="Exportar PNG">
       <div className="prompt">
         <h2>Exportar PNG</h2>
-        <p className="modal-text">A imagem mostra a planta inteira sobre fundo branco, com cotas e textos.</p>
-        <div className="export-options">
+        {has3D && (
+          <div className="field">
+            <span className="field-label">O que exportar</span>
+            <div className="segmented small" role="radiogroup" aria-label="O que exportar">
+              <button type="button" role="radio" aria-checked={source === '2d'} className={source === '2d' ? 'active' : ''} onClick={() => setSource('2d')}>
+                Planta 2D
+              </button>
+              <button type="button" role="radio" aria-checked={source === '3d'} className={source === '3d' ? 'active' : ''} onClick={() => setSource('3d')}>
+                Vista 3D
+              </button>
+            </div>
+          </div>
+        )}
+        <p className="modal-text">
+          {source === '3d'
+            ? 'A imagem mostra a vista 3D como está na tela agora: ajuste a câmera antes de exportar.'
+            : 'A imagem mostra a planta inteira sobre fundo branco, com cotas e textos.'}
+        </p>
+        <div className="export-options" hidden={source === '3d'}>
           {EXPORT_CHECKS.map(({ key, label }) => (
             <label key={key} className="layers-item">
               <input type="checkbox" checked={options[key]} onChange={(e) => setOptions({ ...options, [key]: e.target.checked })} />
