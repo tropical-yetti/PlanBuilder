@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { commands } from '../commands/registry'
 import { formatShortcut, isMacPlatform } from '../commands/shortcuts'
+import { hasContent } from '../persistence/projectFile'
 import { useEditorStore, type ViewMode } from '../store/editorStore'
 import { selectCanRedo, selectCanUndo, useProjectStore } from '../store/projectStore'
 import { Icon } from '../ui/Icon'
@@ -30,8 +31,64 @@ const VIEW_MODES: { mode: ViewMode; label: string }[] = [
   { mode: '3d', label: '3D' },
 ]
 
-export function TopBar() {
+/** Nome do projeto (editável) e onde ele está salvo. */
+function ProjectTitle() {
   const name = useProjectStore((s) => s.project.name)
+  const revision = useProjectStore((s) => s.revision)
+  const content = useProjectStore((s) => hasContent(s.project))
+  const file = useEditorStore((s) => s.file)
+  const [text, setText] = useState<string | null>(null)
+
+  function commit() {
+    const clean = (text ?? '').trim()
+    if (text !== null && clean !== '' && clean !== name) useProjectStore.getState().update('Projeto renomeado', (d) => void (d.name = clean))
+    setText(null)
+  }
+
+  let status = ''
+  let hint = ''
+  if (file.name === null) {
+    if (content) {
+      status = 'Salvo só neste navegador'
+      hint = 'O projeto é guardado automaticamente neste navegador. Use "Salvar" para ter um arquivo no computador.'
+    }
+  } else if (revision !== file.savedRevision) {
+    status = 'Alterações não salvas no arquivo'
+    hint = `Há mudanças depois do último salvamento em "${file.name}". Use "Salvar" (Ctrl+S).`
+  } else {
+    status = 'Salvo em arquivo'
+    hint = `Salvo em "${file.name}".`
+  }
+
+  return (
+    <div className="project-title">
+      <input
+        className="project-name"
+        value={text ?? name}
+        aria-label="Nome do projeto"
+        title="Clique para renomear o projeto"
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onFocus={(e) => e.target.select()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur()
+          else if (e.key === 'Escape') {
+            setText(null)
+            e.currentTarget.blur()
+          }
+        }}
+      />
+      {status && (
+        <span className={`file-status ${file.name !== null && revision !== file.savedRevision ? 'dirty' : ''}`} title={hint}>
+          {status}
+        </span>
+      )}
+    </div>
+  )
+}
+
+export function TopBar() {
+  const canExport = useProjectStore((s) => hasContent(s.project))
   const canUndo = useProjectStore(selectCanUndo)
   const canRedo = useProjectStore(selectCanRedo)
   const viewMode = useEditorStore((s) => s.viewMode)
@@ -47,7 +104,9 @@ export function TopBar() {
         <CommandButton id="file.new">Novo</CommandButton>
         <CommandButton id="file.open">Abrir</CommandButton>
         <CommandButton id="file.save">Salvar</CommandButton>
-        <CommandButton id="file.exportPng">Exportar PNG</CommandButton>
+        <CommandButton id="file.exportPng" enabled={canExport}>
+          Exportar PNG
+        </CommandButton>
       </nav>
 
       <div className="group" aria-label="Histórico">
@@ -59,9 +118,7 @@ export function TopBar() {
         </CommandButton>
       </div>
 
-      <div className="project-name" title="Nome do projeto">
-        {name}
-      </div>
+      <ProjectTitle />
 
       <div className="segmented" role="radiogroup" aria-label="Modo de visualização">
         {VIEW_MODES.map(({ mode, label }) => (

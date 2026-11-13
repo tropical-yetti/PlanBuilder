@@ -31,7 +31,7 @@ function drawPrims(ctx: Context, prims: Prim[], px: number, color: string) {
 }
 
 /** Uma abertura: "apaga" o trecho da parede (o vão) e desenha o símbolo do componente por cima. */
-export function OpeningGlyph({ s, pxPerCm }: { s: OpeningShape; pxPerCm: number }) {
+export function OpeningGlyph({ s, pxPerCm, gapColor = C.canvas }: { s: OpeningShape; pxPerCm: number; /** Cor do fundo, usada para "apagar" a parede no vão. */ gapColor?: string }) {
   const px = 1 / pxPerCm
   const def = getComponent(s.componentId)
   const sceneFunc = (ctx: Context) => {
@@ -39,7 +39,7 @@ export function OpeningGlyph({ s, pxPerCm }: { s: OpeningShape; pxPerCm: number 
     // vão: cobre a parede (e o contorno dela) com a cor do fundo
     ctx.beginPath()
     ctx.rect(-w / 2, -t / 2 - 2 * px, w, t + 4 * px)
-    ctx.setAttr('fillStyle', C.canvas)
+    ctx.setAttr('fillStyle', gapColor)
     ctx.fill()
     // ombreiras: as duas "testas" da parede nas bordas do vão
     ctx.beginPath()
@@ -66,11 +66,11 @@ export function OpeningGlyph({ s, pxPerCm }: { s: OpeningShape; pxPerCm: number 
   )
 }
 
-export function OpeningLayer({ shapes, pxPerCm }: { shapes: OpeningShape[]; pxPerCm: number }) {
+export function OpeningLayer({ shapes, pxPerCm, gapColor }: { shapes: OpeningShape[]; pxPerCm: number; gapColor?: string }) {
   return (
     <Group listening={false}>
       {shapes.map((s) => (
-        <OpeningGlyph key={s.key} s={s} pxPerCm={pxPerCm} />
+        <OpeningGlyph key={s.key} s={s} pxPerCm={pxPerCm} gapColor={gapColor} />
       ))}
     </Group>
   )

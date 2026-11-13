@@ -6,11 +6,10 @@ import { centerOpening, commonWall, distributeOpenings, openingsOnWall } from '.
 import { allSelectable, deleteLabel, deleteObjects } from '../model/selection'
 import { canMergeWalls, mergeWalls, nodePos, splitWall } from '../model/walls'
 import type { Id } from '../model/types'
+import { hasContent, newProject, openProject, saveProject } from '../persistence/projectFile'
 import { useEditorStore } from '../store/editorStore'
 import { selectCanRedo, selectCanUndo, useProjectStore } from '../store/projectStore'
 import type { CommandRegistry } from './registry'
-
-const SOON = 'Disponível em breve'
 
 /** Registra os comandos básicos do app. Retorna uma função que desfaz o registro. */
 export function registerBuiltinCommands(registry: CommandRegistry): () => void {
@@ -22,11 +21,33 @@ export function registerBuiltinCommands(registry: CommandRegistry): () => void {
   const selected = (): Id[] => allSelectable(project().project).filter((id) => editor().selection.includes(id))
 
   const disposers = [
-    // Arquivo (implementados na fase 5: feat/persistencia)
-    registry.register({ id: 'file.new', label: 'Novo projeto', category: 'Arquivo', description: SOON, run: () => {}, isEnabled: () => false }),
-    registry.register({ id: 'file.open', label: 'Abrir projeto…', category: 'Arquivo', shortcuts: ['Ctrl+O'], description: SOON, run: () => {}, isEnabled: () => false }),
-    registry.register({ id: 'file.save', label: 'Salvar projeto', category: 'Arquivo', shortcuts: ['Ctrl+S'], description: SOON, run: () => {}, isEnabled: () => false }),
-    registry.register({ id: 'file.exportPng', label: 'Exportar PNG…', category: 'Arquivo', shortcuts: ['Ctrl+Shift+E'], description: SOON, run: () => {}, isEnabled: () => false }),
+    // Arquivo
+    registry.register({ id: 'file.new', label: 'Novo projeto', category: 'Arquivo', run: newProject }),
+    registry.register({ id: 'file.open', label: 'Abrir projeto…', category: 'Arquivo', shortcuts: ['Ctrl+O'], run: openProject }),
+    registry.register({
+      id: 'file.save',
+      label: 'Salvar projeto',
+      category: 'Arquivo',
+      shortcuts: ['Ctrl+S'],
+      description: 'Salva em arquivo no computador',
+      run: () => void saveProject(),
+    }),
+    registry.register({
+      id: 'file.saveAs',
+      label: 'Salvar como…',
+      category: 'Arquivo',
+      shortcuts: ['Ctrl+Shift+S'],
+      description: 'Salva uma cópia com outro nome ou em outro lugar',
+      run: () => void saveProject({ saveAs: true }),
+    }),
+    registry.register({
+      id: 'file.exportPng',
+      label: 'Exportar PNG…',
+      category: 'Arquivo',
+      shortcuts: ['Ctrl+Shift+E'],
+      run: () => editor().setDialog({ kind: 'export' }),
+      isEnabled: () => hasContent(project().project),
+    }),
 
     // Editar
     registry.register({

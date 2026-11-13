@@ -48,6 +48,22 @@ export type Dialog =
   | { kind: 'palette' }
   | { kind: 'shortcuts' }
   | { kind: 'prompt'; title: string; label: string; suffix?: string; initial: string; onSubmit: (value: number) => void }
+  | { kind: 'confirm'; title: string; message: string; confirmLabel: string; onConfirm: () => void }
+  | { kind: 'export' }
+
+/** Aviso passageiro no canto da tela. */
+export interface Notice {
+  text: string
+  kind: 'info' | 'error'
+}
+
+/** Arquivo em que o projeto está salvo no computador. */
+export interface FileState {
+  /** Nome do arquivo; null enquanto o projeto só existe neste navegador. */
+  name: string | null
+  /** `revision` do documento quando foi salvo ou aberto pela última vez. */
+  savedRevision: number
+}
 
 /** Texto sendo criado (id null) ou editado sobre a planta. */
 export interface TextEdit {
@@ -82,6 +98,10 @@ export interface EditorState {
   contextMenu: ContextTarget | null
   dialog: Dialog | null
   textEdit: TextEdit | null
+  notice: Notice | null
+  file: FileState
+  /** A vista (zoom e posição) foi restaurada da última sessão: o canvas não deve reenquadrar ao abrir. */
+  viewRestored: boolean
   /** Tamanho do canvas 2D em pixels (0 enquanto não montado). */
   canvasSize: { width: number; height: number }
 
@@ -101,6 +121,9 @@ export interface EditorState {
   setContextMenu: (target: ContextTarget | null) => void
   setDialog: (dialog: Dialog | null) => void
   setTextEdit: (edit: TextEdit | null) => void
+  notify: (text: string, kind?: Notice['kind']) => void
+  clearNotice: () => void
+  setFile: (file: FileState) => void
 }
 
 export const useEditorStore = create<EditorState>()((set, get) => ({
@@ -116,6 +139,9 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
   contextMenu: null,
   dialog: null,
   textEdit: null,
+  notice: null,
+  file: { name: null, savedRevision: 0 },
+  viewRestored: false,
 
   setTool: (tool) => set(tool === 'place' ? { tool } : { tool, placing: null }),
   startPlacing: (componentId) => set({ tool: 'place', placing: componentId }),
@@ -136,6 +162,9 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
   setContextMenu: (contextMenu) => set({ contextMenu }),
   setDialog: (dialog) => set({ dialog }),
   setTextEdit: (textEdit) => set({ textEdit }),
+  notify: (text, kind = 'info') => set({ notice: { text, kind } }),
+  clearNotice: () => set({ notice: null }),
+  setFile: (file) => set({ file }),
 }))
 
 export const screenToWorld = (v: View2D, s: Point): Point => ({ x: (s.x - v.x) / v.scale, y: (s.y - v.y) / v.scale })
