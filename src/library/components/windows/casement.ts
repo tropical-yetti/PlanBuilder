@@ -1,3 +1,4 @@
+import { FRAME, frameBoxes, glass, mullion } from '../../model3d'
 import type { ComponentDef } from '../../types'
 import { frame, WINDOW_LIMITS } from './shared'
 
@@ -25,5 +26,8 @@ export const windowCasement: ComponentDef = {
       { t: 'line', pts: [h, y, h, y + h], thin: true },
       { t: 'arc', cx: h, cy: y, r: h, a0: Math.PI / 2, a1: Math.PI, dash: true, thin: true },
     ]
+  },
+  model({ width: w, height: h, thickness: t }) {
+    return [...frameBoxes(w, h, t, true), glass(-w / 2 + FRAME, 0, h), glass(0, w / 2 - FRAME, h), mullion(0, h)]
   },
 }
