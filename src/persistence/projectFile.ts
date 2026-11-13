@@ -1,6 +1,7 @@
 /** Ações de arquivo: novo, abrir, salvar e salvar como (docs/PLANO.md, seção 8). */
 import { fitView } from '../editor2d/view'
 import { createEmptyProject } from '../model/project'
+import { createSampleProject } from '../model/sample'
 import type { Project } from '../model/types'
 import { useEditorStore } from '../store/editorStore'
 import { useProjectStore } from '../store/projectStore'
@@ -53,6 +54,11 @@ function guard(title: string, confirmLabel: string, action: () => void): void {
 
 export function newProject(): void {
   guard('Criar um novo projeto?', 'Descartar e criar novo', () => replaceProject(createEmptyProject(), null, null))
+}
+
+/** Troca o projeto atual pela casa de exemplo. */
+export function loadSample(): void {
+  guard('Abrir o projeto de exemplo?', 'Descartar e abrir o exemplo', () => replaceProject(createSampleProject(), null, null))
 }
 
 /** Abre o conteúdo de um arquivo. Se não for um projeto válido, avisa e mantém o projeto atual. */

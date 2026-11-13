@@ -62,7 +62,8 @@ interface Props {
 
 /** Cotas manuais e textos. Os textos têm tamanho em centímetros: crescem e diminuem com o zoom, como o desenho. */
 export function AnnotationLayer({ project, pxPerCm: k, selected, hovered, hoverColor, showDimensions, showTexts, editingText }: Props) {
-  const colorOf = (id: Id) => (selected.has(id) ? C.accent : hovered === id ? hoverColor : C.annotation)
+  const isLocked = (id: Id) => !!(project.texts[id]?.locked || project.dimensions[id]?.locked)
+  const colorOf = (id: Id) => (selected.has(id) ? C.accent : hovered === id ? hoverColor : isLocked(id) ? C.locked : C.annotation)
   return (
     <Group listening={false}>
       {showDimensions && Object.values(project.dimensions).map((d) => <DimensionGlyph key={d.id} d={d} k={k} color={colorOf(d.id)} />)}

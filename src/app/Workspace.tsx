@@ -1,6 +1,7 @@
 import { Component, lazy, Suspense, type ReactNode } from 'react'
 import { Canvas2D } from '../editor2d/Canvas2D'
 import { useEditorStore } from '../store/editorStore'
+import { Welcome } from './Welcome'
 
 // A vista 3D (three.js) só é baixada quando o usuário a abre.
 const Scene3D = lazy(() => import('../viewer3d/Scene3D'))
@@ -37,6 +38,7 @@ export function Workspace() {
           </Scene3DBoundary>
         </div>
       )}
+      <Welcome />
     </main>
   )
 }

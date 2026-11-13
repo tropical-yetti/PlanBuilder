@@ -1131,3 +1131,60 @@ kbd {
   color: var(--muted);
   pointer-events: none;
 }
+
+/* Boas-vindas */
+.workspace {
+  position: relative;
+}
+
+.welcome {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 20;
+  transform: translate(-50%, -50%);
+  width: min(460px, calc(100% - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 16%);
+}
+
+.welcome h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.welcome ol {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  line-height: 1.45;
+}
+
+/* Tela de erro inesperado */
+.crash {
+  max-width: 520px;
+  margin: 12vh auto 0;
+  padding: 24px;
+  line-height: 1.5;
+}
+
+.crash h1 {
+  font-size: 22px;
+}
+
+.crash details {
+  margin-top: 16px;
+  color: var(--muted);
+}
+
+.crash pre {
+  white-space: pre-wrap;
+}
