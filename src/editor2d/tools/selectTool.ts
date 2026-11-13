@@ -1,5 +1,6 @@
 import { dist, dot, normalize, perp, sub } from '../../model/geometry'
 import { fitOpeningsToWalls, moveOpening } from '../../model/openings'
+import { roomAt } from '../../model/quantities'
 import { connectMovedNodes, nodePos, openingCenter, wallEnds, wallLength, nodesOfWalls, otherNode, parallelMovePositions, setNodePositions, splitWall, wallsAtNode } from '../../model/walls'
 import type { Id, Point, Project } from '../../model/types'
 import { hitTest, hitWall, openingsInBox, wallsInBox } from '../hitTest'
@@ -18,6 +19,7 @@ const DRAG_PX = 4
  * Arrastar um canto move o canto; arrastar uma parede a move em paralelo (as vizinhas esticam);
  * com várias paredes selecionadas, arrastar move todas juntas. Duplo clique na parede insere um nó.
  * Arrastar uma porta ou janela a desliza pela parede (ou a leva para outra parede).
+ * Duplo clique dentro de um cômodo edita o nome dele.
  */
 export function createSelectTool(): Tool {
   let mode: Mode = 'idle'
@@ -220,7 +222,12 @@ export function createSelectTool(): Tool {
       const p = project()
       if (hitTest(p, e.world, pxPerCm(), { nodes: false })?.kind === 'opening') return
       const id = hitWall(p, e.world, pxPerCm())
-      if (!id) return
+      if (!id) {
+        // Duplo clique dentro de um cômodo: editar o nome.
+        const room = roomAt(p, e.world)
+        if (room) editor().setRenamingRoom(room.key)
+        return
+      }
       const w = p.walls[id]!
       const a = nodePos(p, w.a)
       const b = nodePos(p, w.b)

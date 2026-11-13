@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent as RDragEvent, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent } from 'react'
 import { Stage } from 'react-konva'
+import { quantities } from '../model/quantities'
 import { wallPolygons } from '../model/wallGeometry'
 import { screenToWorld, useEditorStore } from '../store/editorStore'
 import { useProjectStore } from '../store/projectStore'
@@ -8,6 +9,8 @@ import { GridLayer } from './layers/GridLayer'
 import { OpeningLayer } from './layers/OpeningLayer'
 import { openingShapes } from './openingShapes'
 import { OverlayLayer } from './layers/OverlayLayer'
+import { RoomLayer } from './layers/RoomLayer'
+import { RoomNameEditor } from './RoomNameEditor'
 import { WallLayer } from './layers/WallLayer'
 import { C } from './theme'
 import { activeTool, tools } from './tools'
@@ -37,6 +40,10 @@ export function Canvas2D() {
   const typed = useInteractionStore((s) => s.typed)
   const box = useInteractionStore((s) => s.box)
   const hover = useInteractionStore((s) => s.hover)
+  const highlightRoom = useInteractionStore((s) => s.highlightRoom)
+  const renamingKey = useEditorStore((s) => s.renamingRoom)
+  const rooms = quantities(project).rooms
+  const renamingRoom = renamingKey ? rooms.find((r) => r.key === renamingKey) : undefined
 
   const polygons = useMemo(() => [...wallPolygons(project).values()], [project])
   const selected = useMemo(
@@ -204,6 +211,7 @@ export function Canvas2D() {
       {size.width > 0 && (
         <Stage width={size.width} height={size.height} x={view.x} y={view.y} scaleX={view.scale} scaleY={view.scale} listening={false}>
           <GridLayer view={view} width={size.width} height={size.height} />
+          <RoomLayer rooms={rooms} pxPerCm={view.scale} highlighted={highlightRoom} editing={renamingRoom?.key ?? null} />
           <WallLayer polygons={polygons} selected={selected} hovered={hoveredWall} hoverColor={hoverColor} />
           <OpeningLayer shapes={openings} pxPerCm={view.scale} />
           <OverlayLayer
@@ -216,6 +224,7 @@ export function Canvas2D() {
           />
         </Stage>
       )}
+      {renamingRoom && <RoomNameEditor key={renamingRoom.key} room={renamingRoom} />}
     </div>
   )
 }

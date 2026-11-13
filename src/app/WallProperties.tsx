@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { commands } from '../commands/registry'
 import { WALL_LIMITS } from '../model/limits'
 import { fitOpeningsToWalls } from '../model/openings'
-import { formatMeters } from '../model/units'
+import { quantities } from '../model/quantities'
+import { formatArea, formatMeters } from '../model/units'
 import { canMergeWalls, connectMovedNodes, setNodePositions, setWallLengthPositions, wallLength, type LengthAnchor } from '../model/walls'
 import type { Id, Wall } from '../model/types'
 import { useEditorStore } from '../store/editorStore'
@@ -55,6 +56,12 @@ export function WallProperties() {
 
   const single = walls.length === 1 ? walls[0]! : null
   const totalLength = walls.reduce((sum, w) => sum + wallLength(project, w), 0)
+  // Superfície das paredes selecionadas: as duas faces, descontando portas e janelas.
+  const sides = quantities(project).wallSides
+  const surface = walls.reduce((sum, w) => {
+    const s = sides.get(w.id)
+    return sum + (s ? s.left.area + s.right.area : 0)
+  }, 0)
   const mergeable = walls.length === 2 && canMergeWalls(project, walls[0]!.id, walls[1]!.id)
 
   return (
@@ -121,6 +128,11 @@ export function WallProperties() {
           })
         }
       />
+
+      <div className="field" title="Área das duas faces, descontando portas e janelas">
+        <span className="field-label">Superfície</span>
+        <span className="field-value">{formatArea(surface)}</span>
+      </div>
 
       <div className="props-actions">
         {single && (
