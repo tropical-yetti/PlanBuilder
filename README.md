@@ -10,3 +10,7 @@
 | `fix/<nome>` | Uma branch por bug. Sai de `main`, volta por PR para `main`. |
 
 Veja [CONTRIBUTING.md](CONTRIBUTING.md) para o passo a passo.
+
+## Planejamento
+
+O plano completo do produto (referências, UX, arquitetura, biblioteca de componentes e fases) está em [docs/PLANO.md](docs/PLANO.md).
