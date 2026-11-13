@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyProject } from '../model/testUtils'
 import { drawRectRoom } from '../model/walls'
-import { AUTOSAVE_KEY, loadAutosave, writeAutosave } from './autosave'
+import { AUTOSAVE_KEY, loadAutosave, loadViewPrefs, saveViewPrefs, VIEW_KEY, writeAutosave } from './autosave'
 
 class MemoryStorage implements Storage {
   private m = new Map<string, string>()
@@ -49,5 +49,17 @@ describe('autosave', () => {
       throw new Error('QuotaExceededError')
     }
     expect(writeAutosave(emptyProject(), s)).toBe(false)
+  })
+
+  it('lembra camadas e vista, ignorando valores inválidos', () => {
+    const s = new MemoryStorage()
+    expect(loadViewPrefs(s).view).toBeNull()
+    const layers = { ...loadViewPrefs(s).layers, grid: false }
+    saveViewPrefs({ layers, view: { x: 10, y: 20, scale: 2 }, projectId: 'abc' }, s)
+    expect(loadViewPrefs(s)).toEqual({ layers, view: { x: 10, y: 20, scale: 2 }, projectId: 'abc' })
+    s.setItem(VIEW_KEY, JSON.stringify({ layers: { grid: 'sim' }, view: { x: 1, y: 2, scale: 9999 } }))
+    const p = loadViewPrefs(s)
+    expect(p.layers.grid).toBe(true)
+    expect(p.view).toBeNull()
   })
 })

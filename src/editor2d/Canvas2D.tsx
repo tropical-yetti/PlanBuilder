@@ -76,7 +76,8 @@ export function Canvas2D() {
       state.setCanvasSize({ width, height })
       if (first && width > 0) {
         first = false
-        state.setView(fitView(useProjectStore.getState().project, { width, height }))
+        // Sem vista lembrada da última sessão, enquadra o desenho.
+        if (!state.viewRestored) state.setView(fitView(useProjectStore.getState().project, { width, height }))
       }
     })
     ro.observe(el)

@@ -3,7 +3,11 @@ import { commands, type CommandCategory } from '../commands/registry'
 import { formatShortcut, isMacPlatform } from '../commands/shortcuts'
 import { normalizeText } from '../library/registry'
 import { parseLength } from '../model/units'
+import { DEFAULT_EXPORT, type ExportOptions } from '../persistence/exportLayout'
+import { download } from '../persistence/fileIO'
+import { fileNameFor } from '../persistence/schema'
 import { useEditorStore, type Dialog } from '../store/editorStore'
+import { useProjectStore } from '../store/projectStore'
 
 const isMac = isMacPlatform()
 const close = () => useEditorStore.getState().setDialog(null)
@@ -213,10 +217,113 @@ function Prompt({ dialog }: { dialog: Extract<Dialog, { kind: 'prompt' }> }) {
   )
 }
 
+function Confirm({ dialog }: { dialog: Extract<Dialog, { kind: 'confirm' }> }) {
+  return (
+    <Modal title={dialog.title}>
+      <div className="prompt">
+        <h2>{dialog.title}</h2>
+        <p className="modal-text">{dialog.message}</p>
+        <div className="prompt-actions">
+          <button type="button" className="btn outline" autoFocus onClick={close}>
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn danger-solid"
+            onClick={() => {
+              close()
+              dialog.onConfirm()
+            }}
+          >
+            {dialog.confirmLabel}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+/** Opções lembradas enquanto a página estiver aberta. */
+let lastExport: ExportOptions = DEFAULT_EXPORT
+
+const EXPORT_CHECKS: { key: 'wallLengths' | 'roomLabels' | 'areaTable' | 'grid'; label: string }[] = [
+  { key: 'wallLengths', label: 'Medidas das paredes' },
+  { key: 'roomLabels', label: 'Nomes e áreas dos cômodos' },
+  { key: 'areaTable', label: 'Quadro de áreas abaixo do desenho' },
+  { key: 'grid', label: 'Grade' },
+]
+
+function ExportPng() {
+  const [options, setOptions] = useState<ExportOptions>(lastExport)
+  const [busy, setBusy] = useState(false)
+
+  async function run() {
+    setBusy(true)
+    lastExport = options
+    const project = useProjectStore.getState().project
+    const name = fileNameFor(project.name, '.png')
+    try {
+      // Carregado só quando necessário: a exportação monta o desenho fora da tela.
+      const { renderPng } = await import('../persistence/exportPng')
+      download(await renderPng(project, options), name)
+      close()
+      useEditorStore.getState().notify(`Imagem exportada como "${name}".`)
+    } catch (e) {
+      setBusy(false)
+      useEditorStore.getState().notify(e instanceof Error ? e.message : 'Não foi possível exportar a imagem.', 'error')
+    }
+  }
+
+  return (
+    <Modal title="Exportar PNG">
+      <div className="prompt">
+        <h2>Exportar PNG</h2>
+        <p className="modal-text">A imagem mostra a planta inteira sobre fundo branco, com cotas e textos.</p>
+        <div className="export-options">
+          {EXPORT_CHECKS.map(({ key, label }) => (
+            <label key={key} className="layers-item">
+              <input type="checkbox" checked={options[key]} onChange={(e) => setOptions({ ...options, [key]: e.target.checked })} />
+              {label}
+            </label>
+          ))}
+        </div>
+        <div className="field">
+          <span className="field-label">Resolução</span>
+          <div className="segmented small" role="radiogroup" aria-label="Resolução">
+            {([2, 4] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                role="radio"
+                aria-checked={options.pixelRatio === r}
+                className={options.pixelRatio === r ? 'active' : ''}
+                title={r === 2 ? 'Boa para tela e mensagens' : 'Boa para impressão'}
+                onClick={() => setOptions({ ...options, pixelRatio: r })}
+              >
+                {r === 2 ? 'Normal' : 'Alta'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="prompt-actions">
+          <button type="button" className="btn outline" onClick={close}>
+            Cancelar
+          </button>
+          <button type="button" className="btn primary" disabled={busy} onClick={run}>
+            {busy ? 'Gerando…' : 'Exportar'}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 export function Dialogs() {
   const dialog = useEditorStore((s) => s.dialog)
   if (!dialog) return null
   if (dialog.kind === 'palette') return <Palette />
   if (dialog.kind === 'shortcuts') return <Shortcuts />
+  if (dialog.kind === 'confirm') return <Confirm dialog={dialog} />
+  if (dialog.kind === 'export') return <ExportPng />
   return <Prompt dialog={dialog} />
 }
