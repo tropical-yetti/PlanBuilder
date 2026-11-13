@@ -1,5 +1,26 @@
 # PlanBuilder
 
+Editor web de plantas baixas em 2D com visualização 3D. Roda inteiramente no navegador.
+
+## Rodando localmente
+
+Requer Node.js 22 ou mais recente.
+
+```bash
+npm install
+npm run dev
+```
+
+Abra o endereço que aparecer no terminal (normalmente http://localhost:5173).
+
+| Comando | O que faz |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento com recarregamento automático |
+| `npm test` | Testes unitários (Vitest) |
+| `npm run lint` | Verificação de código (oxlint) |
+| `npm run build` | Checagem de tipos + build de produção em `dist/` |
+| `npm run preview` | Serve o build de produção localmente |
+
 ## Fluxo de branches
 
 | Branch | Função |
