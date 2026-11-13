@@ -12,7 +12,8 @@ export function ToolBar() {
           key={tool.id}
           type="button"
           className={`tool ${active === tool.id ? 'active' : ''}`}
-          title={`${tool.label} (${tool.shortcut})`}
+          title={tool.available ? `${tool.label} (${tool.shortcut})` : `${tool.label} — disponível em breve`}
+          disabled={!tool.available}
           aria-label={tool.label}
           aria-pressed={active === tool.id}
           onClick={() => commands.execute(`tool.${tool.id}`)}

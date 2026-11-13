@@ -1,0 +1,22 @@
+/** Cores do desenho 2D. */
+export const C = {
+  gridMinor: '#eef0f4',
+  gridMid: '#e3e7ed',
+  gridMajor: '#d2d8e1',
+  wallFill: '#4b5563',
+  wallStroke: '#1f2937',
+  wallHover: '#6b7280',
+  wallSelected: '#2563eb',
+  wallErase: '#dc2626',
+  draftFill: 'rgba(37, 99, 235, 0.35)',
+  draftStroke: '#2563eb',
+  accent: '#2563eb',
+  snap: '#f97316',
+  guide: '#f97316',
+  label: '#374151',
+  labelBg: 'rgba(255, 255, 255, 0.9)',
+  boxContain: 'rgba(37, 99, 235, 0.08)',
+  boxTouch: 'rgba(22, 163, 74, 0.08)',
+  boxContainStroke: '#2563eb',
+  boxTouchStroke: '#16a34a',
+}

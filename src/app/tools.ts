@@ -6,17 +6,19 @@ export interface ToolInfo {
   shortcut: string
   /** Texto da barra de status: o que o usuário deve fazer a seguir. */
   hint: string
+  /** Ferramentas ainda não implementadas aparecem desativadas. */
+  available: boolean
 }
 
 /** Ferramentas da barra lateral, na ordem em que aparecem (docs/PLANO.md, seção 3). */
 export const TOOLS: ToolInfo[] = [
-  { id: 'select', label: 'Selecionar', shortcut: 'V', hint: 'Clique para selecionar · Shift+clique adiciona · arraste para seleção em caixa' },
-  { id: 'wall', label: 'Parede', shortcut: 'W', hint: 'Clique para iniciar a parede · digite o comprimento + Enter · Esc encerra' },
-  { id: 'room', label: 'Cômodo retangular', shortcut: 'A', hint: 'Clique e arraste para criar um cômodo · ou digite 400x300 + Enter' },
-  { id: 'erase', label: 'Excluir', shortcut: 'E', hint: 'Clique no objeto que deseja excluir' },
-  { id: 'measure', label: 'Medir', shortcut: 'M', hint: 'Clique em dois pontos para medir a distância' },
-  { id: 'dimension', label: 'Cota', shortcut: 'D', hint: 'Clique em dois pontos para criar uma cota' },
-  { id: 'text', label: 'Texto', shortcut: 'T', hint: 'Clique na planta para inserir um texto' },
+  { id: 'select', label: 'Selecionar', shortcut: 'V', hint: 'Clique seleciona · Shift+clique adiciona · arraste no vazio para selecionar em caixa · arraste a parede para movê-la · duplo clique insere um nó', available: true },
+  { id: 'wall', label: 'Parede', shortcut: 'W', hint: 'Clique para iniciar · clique para cada canto · digite o comprimento + Enter · Shift trava 15° · Alt desliga os snaps · Esc encerra', available: true },
+  { id: 'room', label: 'Cômodo retangular', shortcut: 'A', hint: 'Clique e arraste para criar um cômodo · após o 1º canto, digite 400x300 + Enter (medidas pelo eixo das paredes)', available: true },
+  { id: 'erase', label: 'Excluir', shortcut: 'E', hint: 'Clique na parede que deseja excluir', available: true },
+  { id: 'measure', label: 'Medir', shortcut: 'M', hint: 'Clique em dois pontos para medir a distância', available: false },
+  { id: 'dimension', label: 'Cota', shortcut: 'D', hint: 'Clique em dois pontos para criar uma cota', available: false },
+  { id: 'text', label: 'Texto', shortcut: 'T', hint: 'Clique na planta para inserir um texto', available: false },
 ]
 
 export function getTool(id: ToolId): ToolInfo {
