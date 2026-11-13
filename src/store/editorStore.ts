@@ -28,6 +28,8 @@ export interface EditorState {
   view: View2D
   /** Ids selecionados (paredes, por enquanto; depois aberturas, cotas, textos). */
   selection: Id[]
+  /** Chave do cômodo cujo nome está sendo editado sobre a planta. */
+  renamingRoom: string | null
   /** Tamanho do canvas 2D em pixels (0 enquanto não montado). */
   canvasSize: { width: number; height: number }
 
@@ -41,6 +43,7 @@ export interface EditorState {
   zoomAt: (anchor: Point, factor: number) => void
   setSelection: (ids: Id[]) => void
   setCanvasSize: (size: { width: number; height: number }) => void
+  setRenamingRoom: (key: string | null) => void
 }
 
 export const useEditorStore = create<EditorState>()((set, get) => ({
@@ -51,6 +54,7 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
   view: { x: 0, y: 0, scale: 1 },
   selection: [],
   canvasSize: { width: 0, height: 0 },
+  renamingRoom: null,
 
   setTool: (tool) => set(tool === 'place' ? { tool } : { tool, placing: null }),
   startPlacing: (componentId) => set({ tool: 'place', placing: componentId }),
@@ -65,6 +69,7 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
   },
   setSelection: (selection) => set({ selection }),
   setCanvasSize: (canvasSize) => set({ canvasSize }),
+  setRenamingRoom: (renamingRoom) => set({ renamingRoom }),
 }))
 
 export const screenToWorld = (v: View2D, s: Point): Point => ({ x: (s.x - v.x) / v.scale, y: (s.y - v.y) / v.scale })

@@ -33,3 +33,8 @@ export const formatCm = (cm: number): string => `${nf0.format(cm)} cm`
 
 /** Número em cm para campos de formulário: "350" ou "352,5". */
 export const formatCmValue = (cm: number): string => nf0.format(Math.round(cm * 10) / 10).replace(/\./g, '')
+
+const nfArea = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+/** Área em cm² exibida como "12,35 m²". */
+export const formatArea = (cm2: number): string => `${nfArea.format(cm2 / 10000)} m²`

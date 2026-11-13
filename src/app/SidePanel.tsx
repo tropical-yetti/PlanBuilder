@@ -1,4 +1,5 @@
 import { useEditorStore, type SidePanelTab } from '../store/editorStore'
+import { AreasPanel } from './AreasPanel'
 import { PropertiesPanel } from './PropertiesPanel'
 
 const TABS: { id: SidePanelTab; label: string }[] = [
@@ -29,7 +30,7 @@ export function SidePanel() {
         {tab === 'properties' ? (
           <PropertiesPanel />
         ) : (
-          <p className="empty">Desenhe cômodos fechados para ver a área total, a área útil e a área de paredes.</p>
+          <AreasPanel />
         )}
       </div>
     </section>

@@ -40,6 +40,8 @@ export interface InteractionState {
   /** Caixa de seleção em coordenadas do mundo. */
   box: { a: Point; b: Point } | null
   hover: HoverTarget | null
+  /** Cômodo destacado (ao passar o mouse na tabela de áreas). */
+  highlightRoom: string | null
   set: (partial: Partial<Omit<InteractionState, 'set' | 'reset'>>) => void
   reset: () => void
 }
@@ -51,6 +53,7 @@ export const useInteractionStore = create<InteractionState>()((set) => ({
   typed: '',
   box: null,
   hover: null,
+  highlightRoom: null,
   set: (partial) => set(partial),
   reset: () => set({ snap: null, draft: null, typed: '', box: null, hover: null }),
 }))
