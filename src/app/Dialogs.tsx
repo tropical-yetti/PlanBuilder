@@ -130,6 +130,7 @@ function Shortcuts() {
     ['Shift (desenhando)', 'Trava o ângulo em passos de 15°'],
     ['Alt (desenhando ou arrastando)', 'Desliga os snaps'],
     ['Shift + clique', 'Adiciona ou remove da seleção'],
+    ['Shift ou Ctrl (arrastando)', 'Trava a direção: a parede move a linha reta inteira sem mudar ângulos; cantos, móveis e grupos só na horizontal ou vertical'],
     ['Duplo clique', 'Parede: insere um nó · Texto: edita · Cômodo: dá nome'],
     ['Botão direito', 'Menu com as ações do objeto'],
   ]

@@ -13,6 +13,7 @@
 
 import {
   add,
+  cross,
   dist,
   dot,
   lineIntersection,
@@ -391,6 +392,61 @@ export function parallelMovePositions(p: Project, wallId: Id, distance: number):
     } else {
       result[nodeId] = moved
     }
+  }
+  return result
+}
+
+/** Paredes alinhadas em sequência com a dada (a mesma linha reta, mesmo que dividida em trechos por um T). */
+export function collinearRun(p: Project, wallId: Id, angleTolDeg = 0.5): Id[] {
+  const w = p.walls[wallId]
+  if (!w) return []
+  const [A, B] = wallEnds(p, w)
+  const d = normalize(sub(B, A))
+  const tol = Math.sin((angleTolDeg * Math.PI) / 180)
+  const run = new Set<Id>([wallId])
+  const stack = [w]
+  while (stack.length > 0) {
+    const cur = stack.pop()!
+    for (const nodeId of [cur.a, cur.b]) {
+      for (const o of wallsAtNode(p, nodeId)) {
+        if (run.has(o.id)) continue
+        const od = normalize(sub(nodePos(p, otherNode(o, nodeId)), nodePos(p, nodeId)))
+        if (Math.abs(cross(od, d)) <= tol) {
+          run.add(o.id)
+          stack.push(o)
+        }
+      }
+    }
+  }
+  return [...run]
+}
+
+/**
+ * Move em paralelo a linha reta inteira da parede (todos os trechos alinhados), sem mudar nenhum ângulo:
+ * em cada canto da linha, as paredes que chegam nela esticam ou encolhem na própria direção.
+ * Num canto onde chegam paredes em direções diferentes, o canto apenas acompanha o deslocamento.
+ */
+export function runMovePositions(p: Project, wallId: Id, distance: number): Record<Id, Point> {
+  const w = p.walls[wallId]
+  if (!w) return {}
+  const [A, B] = wallEnds(p, w)
+  const d = normalize(sub(B, A))
+  const offset = scale(perp(d), distance)
+  const run = new Set(collinearRun(p, wallId))
+  const result: Record<Id, Point> = {}
+  for (const nodeId of nodesOfWalls(p, [...run])) {
+    const N = nodePos(p, nodeId)
+    const moved = add(N, offset)
+    const others = wallsAtNode(p, nodeId).filter((o) => !run.has(o.id))
+    // Direções (sem sentido) das paredes que chegam neste canto; paredes alinhadas entre si contam uma vez.
+    const dirs: Point[] = []
+    for (const o of others) {
+      const od = normalize(sub(nodePos(p, otherNode(o, nodeId)), N))
+      if (!dirs.some((x) => Math.abs(cross(x, od)) < 1e-3)) dirs.push(od)
+    }
+    const only = dirs.length === 1 ? dirs[0]! : null
+    const hit = only && Math.abs(dot(only, perp(d))) > 0.02 ? lineIntersection(moved, d, N, only) : null
+    result[nodeId] = hit ? hit.point : moved
   }
   return result
 }
