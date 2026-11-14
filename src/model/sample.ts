@@ -83,6 +83,8 @@ export function createSampleProject(): Project {
   furniture('furniture.armchair', { x: 380, y: 50 })
   furniture('furniture.table-round', { x: 320, y: 250 })
   furniture('furniture.bed-double', { x: 700, y: 175 })
+  furniture('appliance.fridge-duplex', { x: 520, y: 560 })
+  furniture('appliance.stove-4', { x: 640, y: 560 })
 
   label(p, 220, 180, 'Sala')
   label(p, 625, 170, 'Quarto')

@@ -1205,3 +1205,4 @@ kbd {
   gap: 4px;
   margin-top: -4px;
 }
+.scene3d { user-select: none; }

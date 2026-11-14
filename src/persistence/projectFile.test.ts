@@ -79,6 +79,13 @@ describe('exportar: enquadramento', () => {
     expect(1992.5 * l.scale + l.y).toBeCloseTo(48)
   })
 
+  it('o giro tracejado da porta da geladeira entra no enquadramento', () => {
+    const p = emptyProject()
+    p.items.g = { id: 'g', componentId: 'appliance.fridge-duplex', x: 0, y: 0, rotation: 0, width: 62.1, depth: 75.5, height: 176, mirrored: false, params: {} }
+    // a porta de 62,1 cm gira para a frente: o desenho vai até y = 37,75 + 62,1
+    expect(contentBounds(p)!.maxY).toBeCloseTo(75.5 / 2 + 62.1)
+  })
+
   it('plantas enormes não passam do tamanho máximo de imagem', () => {
     expect(safePixelRatio(4, 1096, 800)).toBe(4)
     expect(safePixelRatio(4, 3000, 2000) * 3000).toBeLessThanOrEqual(MAX_SIDE)

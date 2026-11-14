@@ -10,7 +10,7 @@
 import type { CategoryId } from './categories'
 
 /** Preenchimentos do símbolo 2D. */
-export type PrimFill = 'leaf' | 'glass' | 'solid' | 'soft' | 'wood' | 'concrete'
+export type PrimFill = 'leaf' | 'glass' | 'solid' | 'soft' | 'wood' | 'concrete' | 'steel' | 'dark'
 
 /**
  * Primitivas do símbolo 2D, em centímetros, no sistema local do componente:
@@ -35,7 +35,23 @@ export interface SymbolInput {
   params: Record<string, unknown>
 }
 
-export type Material = 'frame' | 'leaf' | 'glass' | 'concrete' | 'wood' | 'fabric' | 'cushion' | 'sheet' | 'pillow' | 'metal'
+export type Material =
+  | 'frame'
+  | 'leaf'
+  | 'glass'
+  | 'concrete'
+  | 'wood'
+  | 'fabric'
+  | 'cushion'
+  | 'sheet'
+  | 'pillow'
+  | 'metal'
+  /** Aço inox (fogões, geladeiras). */
+  | 'steel'
+  /** Esmaltado branco (lavadoras). */
+  | 'enamel'
+  /** Vidro escuro / ferro fundido (mesa do fogão, porta do forno). */
+  | 'dark'
 
 /**
  * Peça do modelo 3D: uma caixa, em centímetros, no sistema local da abertura:

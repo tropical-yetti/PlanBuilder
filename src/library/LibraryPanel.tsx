@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { formatCmValue } from '../model/units'
 import { useEditorStore } from '../store/editorStore'
 import { CATEGORIES, type CategoryId } from './categories'
 import { listByCategory, searchComponents } from './registry'
@@ -17,10 +18,12 @@ function groupsOf(defs: LibraryDef[]): { name: string; defs: LibraryDef[] }[] {
   return groups
 }
 
+/** Medida padrão no formato brasileiro ("77,8 × 68,1 cm"). */
 function sizeOf(def: LibraryDef): string {
-  if (def.kind === 'opening') return `${def.defaults.width} × ${def.defaults.height} cm`
-  if (def.round) return `⌀ ${def.defaults.width} cm`
-  return `${def.defaults.width} × ${def.defaults.depth} cm`
+  const f = formatCmValue
+  if (def.kind === 'opening') return `${f(def.defaults.width)} × ${f(def.defaults.height)} cm`
+  if (def.round) return `⌀ ${f(def.defaults.width)} cm`
+  return `${f(def.defaults.width)} × ${f(def.defaults.depth)} cm`
 }
 
 function Card({ def }: { def: LibraryDef }) {

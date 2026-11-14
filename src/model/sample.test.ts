@@ -20,6 +20,8 @@ describe('projeto de exemplo', () => {
 
   it('tem móveis e um cobogó', () => {
     expect(Object.values(p.items).map((it) => it.componentId).sort()).toEqual([
+      'appliance.fridge-duplex',
+      'appliance.stove-4',
       'furniture.armchair',
       'furniture.bed-double',
       'furniture.sofa-3',

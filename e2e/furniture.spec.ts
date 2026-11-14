@@ -78,3 +78,41 @@ test('cobogó: painel na parede, ocupar a parede inteira e estimativa de peças'
   await page.getByRole('tab', { name: 'Áreas' }).click()
   await expect(page.locator('.area-row', { hasText: /^Cobogó/ })).toContainText('10,92 m²')
 })
+
+test('eletrodomésticos e porta sanfonada', async ({ page }) => {
+  await openApp(page)
+  await drawRoom(page, -200, -150, '400x300')
+  const w = await world(page)
+  const place = async (name: string, x: number, y: number) => {
+    await page.locator('.lib-card', { hasText: name }).first().click()
+    await w.click(x, y)
+    await page.keyboard.press('Escape')
+  }
+
+  // Geladeira perto da parede de cima: o fundo encosta e as medidas são as do modelo Brastemp
+  await place('Geladeira duplex', -120, -100)
+  await expect(page.locator('.props-title')).toHaveText('Geladeira duplex')
+  await expect(page.locator('.field:has-text("Largura") input')).toHaveValue('62,1')
+  await page.locator('.field:has-text("Tipo") select').selectOption('appliance.fridge-side')
+  await expect(page.locator('.field:has-text("Largura") input')).toHaveValue('83,6')
+
+  await place('Fogão 5 bocas', 40, -100)
+  await place('Máquina de lavar', 120, 100)
+
+  const items = Object.values(((await savedProject(page)) as unknown as { items: Record<string, SavedItem> }).items)
+  expect(items.map((it) => it.componentId)).toEqual(['appliance.fridge-side', 'appliance.stove-5', 'appliance.washer-top'])
+  // fundo da geladeira encostado na face interna da parede de cima (y = −150 + 7,5)
+  const fridge = items[0]!
+  expect(fridge.rotation).toBe(0)
+  expect(fridge.y - fridge.depth / 2).toBeCloseTo(-142.5)
+
+  // Porta sanfonada na parede de baixo
+  await place('Porta sanfonada', -50, 145)
+  await expect(page.locator('.props-title')).toHaveText('Porta sanfonada')
+  await page.getByRole('button', { name: '120', exact: true }).click()
+  await expect(page.locator('.field:has-text("Largura") input')).toHaveValue('120')
+
+  await page.getByRole('tab', { name: 'Áreas' }).click()
+  await expect(page.locator('.area-row', { hasText: 'Porta sanfonada' })).toContainText('1')
+  await expect(page.locator('.area-row', { hasText: 'Fogão 5 bocas' })).toContainText('1')
+})
