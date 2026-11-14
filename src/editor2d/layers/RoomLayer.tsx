@@ -1,5 +1,5 @@
 import type { Context } from 'konva/lib/Context'
-import { Group, Shape, Text } from 'react-konva'
+import { Group, Rect, Shape, Text } from 'react-konva'
 import type { Room } from '../../model/quantities'
 import { formatArea } from '../../model/units'
 import { C } from '../theme'
@@ -11,12 +11,17 @@ interface Props {
   /** Cômodo sendo renomeado: o rótulo some para dar lugar ao campo de texto. */
   editing: string | null
   showLabels: boolean
+  /** O piso fica embaixo de tudo; os nomes ficam por cima dos móveis, para não serem cobertos. */
+  part?: 'floor' | 'labels'
 }
 
 const LABEL_W = 160
 
+/** Largura aproximada do rótulo (nome ou área, o que for maior), em pixels. */
+const labelWidth = (room: Room) => Math.max(room.name.length * 7.5, formatArea(room.area).length * 6.8) + 14
+
 /** Piso dos cômodos detectados, com nome e área no centro. */
-export function RoomLayer({ rooms, pxPerCm: k, highlighted, editing, showLabels }: Props) {
+export function RoomLayer({ rooms, pxPerCm: k, highlighted, editing, showLabels, part = 'floor' }: Props) {
   return (
     <Group listening={false}>
       {rooms.map((room) => {
@@ -32,12 +37,21 @@ export function RoomLayer({ rooms, pxPerCm: k, highlighted, editing, showLabels 
           ctx.fill('evenodd')
         }
         // Em cômodos pequenos na tela, o rótulo atrapalharia mais do que ajuda.
-        const showLabel = showLabels && Math.sqrt(room.area) * k >= 70 && room.key !== editing
+        const showLabel = part === 'labels' && showLabels && Math.sqrt(room.area) * k >= 70 && room.key !== editing
         return (
           <Group key={room.key}>
-            <Shape sceneFunc={sceneFunc} />
+            {part === 'floor' && <Shape sceneFunc={sceneFunc} />}
             {showLabel && (
               <Group x={room.labelPoint.x} y={room.labelPoint.y} scaleX={1 / k} scaleY={1 / k}>
+                {/* Fundo claro: o nome continua legível sobre móveis. */}
+                <Rect
+                  x={-Math.min(LABEL_W, labelWidth(room)) / 2}
+                  y={-18}
+                  width={Math.min(LABEL_W, labelWidth(room))}
+                  height={36}
+                  cornerRadius={4}
+                  fill="rgba(255, 255, 255, 0.82)"
+                />
                 <Text
                   text={room.name}
                   width={LABEL_W}

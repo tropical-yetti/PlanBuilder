@@ -1,5 +1,7 @@
 import { dimensionGeometry, textCorners } from '../model/annotations'
 import { dist, dot, normalize, perp, pointInPolygon, pointInRect, projectOnSegment, rectFromPoints, segmentIntersectsRect, sub } from '../model/geometry'
+import { getItem } from '../library/registry'
+import { itemCorners, pointInItem } from '../model/items'
 import { wallPolygons } from '../model/wallGeometry'
 import { openingCenter, wallsAtNode } from '../model/walls'
 import type { Id, Point, Project } from '../model/types'
@@ -66,6 +68,19 @@ export function hitOpening(p: Project, point: Point, pxPerCm: number, includeLoc
   return null
 }
 
+/** Móvel sob o cursor; entre móveis sobrepostos, o que foi inserido por último (desenhado por cima). */
+export function hitItem(p: Project, point: Point, pxPerCm: number, includeLocked = false): Id | null {
+  if (!layers().items) return null
+  const tol = 2 / pxPerCm
+  const list = Object.values(p.items)
+  for (let i = list.length - 1; i >= 0; i--) {
+    const it = list[i]!
+    if (it.locked && !includeLocked) continue
+    if (pointInItem(it, point, !!getItem(it.componentId).round, tol)) return it.id
+  }
+  return null
+}
+
 export function hitText(p: Project, point: Point, includeLocked = false): Id | null {
   if (!layers().texts) return null
   for (const t of Object.values(p.texts)) {
@@ -105,6 +120,8 @@ export function hitTest(p: Project, point: Point, pxPerCm: number, opts: HitOpti
   if (d) return { kind: 'dimension', id: d }
   const o = hitOpening(p, point, pxPerCm, locked)
   if (o) return { kind: 'opening', id: o }
+  const it = hitItem(p, point, pxPerCm, locked)
+  if (it) return { kind: 'item', id: it }
   const w = hitWall(p, point, pxPerCm, locked)
   return w ? { kind: 'wall', id: w } : null
 }
@@ -134,6 +151,9 @@ export function objectsInBox(p: Project, a: Point, b: Point, touching: boolean):
     for (const o of Object.values(p.openings)) {
       if (!o.locked && p.walls[o.wallId] && pointInRect(openingCenter(p, o), r)) ids.push(o.id)
     }
+  }
+  if (l.items) {
+    for (const it of Object.values(p.items)) if (!it.locked && polyHit(itemCorners(it))) ids.push(it.id)
   }
   if (l.texts) {
     for (const t of Object.values(p.texts)) if (!t.locked && polyHit(textCorners(t))) ids.push(t.id)

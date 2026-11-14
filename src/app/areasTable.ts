@@ -1,4 +1,4 @@
-import { getComponent } from '../library/registry'
+import { getComponent, getItem } from '../library/registry'
 import type { Quantities } from '../model/quantities'
 
 const n2 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false })
@@ -27,6 +27,13 @@ export function areasAsTsv(q: Quantities): string {
   if (q.openingCounts.length > 0) {
     rows.push([], ['Portas e janelas', 'Quantidade'])
     for (const c of q.openingCounts) rows.push([getComponent(c.componentId).name, c.count])
+  }
+  if (q.cobogo.area > 0) {
+    rows.push([], ['Cobogó', 'Valor'], ['Área de cobogó (m²)', m2(q.cobogo.area)], ['Peças (estimativa)', q.cobogo.pieces])
+  }
+  if (q.itemCounts.length > 0) {
+    rows.push([], ['Móveis', 'Quantidade'])
+    for (const c of q.itemCounts) rows.push([getItem(c.componentId).name, c.count])
   }
   return rows.map((r) => r.join('\t')).join('\n')
 }

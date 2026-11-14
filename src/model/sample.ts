@@ -1,4 +1,6 @@
 /** Projeto de exemplo oferecido na primeira abertura: uma casa pequena para explorar o app. */
+import { getItem } from '../library/registry'
+import { addItem, snapToWall } from './items'
 import { addOpening } from './openings'
 import { createEmptyProject, newId } from './project'
 import type { Point, Project } from './types'
@@ -57,6 +59,30 @@ export function createSampleProject(): Project {
   place(p, { x: 620, y: 0 }, 'window.sliding', 150, 120, 100, { params: { leaves: 2 } })
   place(p, { x: 800, y: 480 }, 'window.casement', 100, 120, 100)
   place(p, { x: 120, y: 600 }, 'window.tilt', 60, 60, 160)
+
+  // Cobogó: faixa de ventilação no alto da parede entre a cozinha e o quarto
+  place(p, { x: 625, y: 350 }, 'cobogo.band', 200, 50, 200, { params: { pieceSize: 25 } })
+
+  // Móveis: os que encostam na parede são posicionados pela mesma regra do editor.
+  const furniture = (componentId: string, near: Point, extra: { rotation?: number } = {}) => {
+    const def = getItem(componentId)
+    const snap = def.againstWall ? snapToWall(p, near, def.defaults.depth, 200) : null
+    addItem(p, {
+      componentId,
+      x: snap?.x ?? near.x,
+      y: snap?.y ?? near.y,
+      rotation: snap?.rotation ?? extra.rotation ?? 0,
+      width: def.defaults.width,
+      depth: def.defaults.depth,
+      height: def.defaults.height,
+      mirrored: false,
+      params: { ...def.defaults.params },
+    })
+  }
+  furniture('furniture.sofa-3', { x: 60, y: 190 })
+  furniture('furniture.armchair', { x: 380, y: 50 })
+  furniture('furniture.table-round', { x: 320, y: 250 })
+  furniture('furniture.bed-double', { x: 700, y: 175 })
 
   label(p, 220, 180, 'Sala')
   label(p, 625, 170, 'Quarto')

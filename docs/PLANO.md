@@ -7,7 +7,12 @@ desenhar uma planta correta em poucos minutos.
 
 ## Situação
 
-O MVP (fases 0 a 7 da seção 9) está implementado na branch `dev`. O próximo passo é o roadmap da seção 11.
+O MVP (fases 0 a 7 da seção 9) está implementado. Do roadmap da seção 11 (v1.0), já entraram:
+
+- **Móveis** (objetos soltos no cômodo): sofás de 2 e 3 lugares, poltrona, mesas quadrada, retangular e redonda com cadeiras, camas nos 6 tamanhos padrão de colchão no Brasil. Encostam na parede, giram, espelham, copiam e aparecem em 3D.
+- **Cobogó**, como componente de parede (categoria própria na biblioteca): painel do piso ao teto e faixa de ventilação, com tamanho de peça, "ocupar a parede inteira" e estimativa de peças.
+
+Faltam da v1.0: louças de banheiro e cozinha, eletrodomésticos, agrupar, imagem de fundo para decalcar e PDF em escala.
 
 Diferenças em relação ao que este plano previa:
 

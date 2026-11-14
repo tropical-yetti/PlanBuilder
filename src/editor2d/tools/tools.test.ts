@@ -337,3 +337,59 @@ describe('medir, cota e texto', () => {
     expect(ed().selection).toEqual([])
   })
 })
+
+describe('móveis e cobogó na planta', () => {
+  beforeEach(() => {
+    doc().update('setup', (d) => {
+      drawRectRoom(d, { x: 0, y: 0 }, { x: 600, y: 400 })
+    })
+  })
+  const items = () => Object.values(doc().project.items)
+
+  it('sofá perto da parede encosta o fundo nela; longe, fica solto', () => {
+    ed().startPlacing('furniture.sofa-3')
+    click('place', 300, 60) // a 60 cm da parede de cima: encosta (face interna em 7,5)
+    expect(items()).toHaveLength(1)
+    expect(items()[0]).toMatchObject({ x: 300, y: 52.5, rotation: 0, width: 210, depth: 90 })
+    expect(doc().past.at(-1)!.label).toBe('Móvel inserido')
+    click('place', 300, 200) // no meio do cômodo: solto
+    expect(items()[1]).toMatchObject({ x: 300, y: 200, rotation: 0 })
+  })
+
+  it('perto da parede da direita, a cama vira o fundo para ela', () => {
+    ed().startPlacing('furniture.bed-double')
+    click('place', 520, 200)
+    expect(items()[0]).toMatchObject({ x: 600 - 7.5 - 94, y: 200, rotation: 90 })
+  })
+
+  it('R gira o móvel antes de inserir; mesa não encosta na parede', () => {
+    ed().startPlacing('furniture.table-rect')
+    key('place', 'r')
+    click('place', 300, 60)
+    expect(items()[0]).toMatchObject({ x: 300, y: 60, rotation: 90 })
+  })
+
+  it('arrastar o móvel o move e, perto da parede, ele encosta', () => {
+    ed().startPlacing('furniture.armchair')
+    click('place', 300, 200)
+    ed().setTool('select')
+    const id = items()[0]!.id
+    drag('select', [300, 200], [150, 180])
+    expect(doc().project.items[id]).toMatchObject({ x: 150, y: 180, rotation: 0 })
+    drag('select', [150, 180], [60, 180]) // perto da parede da esquerda
+    expect(doc().project.items[id]).toMatchObject({ x: 47.5, y: 180, rotation: 270 })
+    expect(doc().past.at(-1)!.label).toBe('Móvel movido')
+    // Excluir pela ferramenta
+    ed().setTool('erase')
+    click('erase', 47.5, 180)
+    expect(items()).toHaveLength(0)
+  })
+
+  it('painel de cobogó ocupa a altura da parede ao ser inserido', () => {
+    ed().startPlacing('cobogo.panel')
+    click('place', 300, 3)
+    const o = Object.values(doc().project.openings)[0]!
+    expect(o).toMatchObject({ componentId: 'cobogo.panel', height: 280, sillHeight: 0, width: 150 })
+    expect(doc().past.at(-1)!.label).toBe('Cobogó inserido')
+  })
+})

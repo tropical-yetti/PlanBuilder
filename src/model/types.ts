@@ -44,6 +44,26 @@ export interface Opening {
   locked?: boolean
 }
 
+/** Móvel ou objeto solto no cômodo. */
+export interface Item {
+  id: Id
+  /** Id do componente na biblioteca, ex.: "furniture.sofa-3". */
+  componentId: string
+  /** Centro, em cm. */
+  x: number
+  y: number
+  /** Giro em graus (sentido horário na tela). 0 = fundo voltado para cima. */
+  rotation: number
+  width: number
+  /** Profundidade (frente a fundo). */
+  depth: number
+  height: number
+  /** Espelhado da esquerda para a direita. */
+  mirrored: boolean
+  params: Record<string, unknown>
+  locked?: boolean
+}
+
 export interface Dimension {
   id: Id
   p1: Point
@@ -90,8 +110,8 @@ export interface Project {
   nodes: Record<Id, WallNode>
   walls: Record<Id, Wall>
   openings: Record<Id, Opening>
-  /** Reservado para móveis/louças soltos (pós-MVP). */
-  items: Record<Id, never>
+  /** Móveis e objetos soltos. */
+  items: Record<Id, Item>
   dimensions: Record<Id, Dimension>
   texts: Record<Id, TextNote>
   roomLabels: Record<Id, RoomLabel>

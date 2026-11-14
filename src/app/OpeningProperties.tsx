@@ -1,8 +1,9 @@
 import { commands } from '../commands/registry'
-import { getComponent, listByCategory } from '../library/registry'
-import type { ComponentDef, ParamField } from '../library/types'
-import { commonWall, distancesToEnds, isOpeningValid, moveOpening, openingsOnWall, resizeOpening } from '../model/openings'
+import { getComponent, openingsByCategory } from '../library/registry'
+import type { OpeningDef, ParamField } from '../library/types'
+import { commonWall, distancesToEnds, fillWall, isOpeningValid, moveOpening, openingsOnWall, resizeOpening } from '../model/openings'
 import type { Id, Opening } from '../model/types'
+import { formatArea } from '../model/units'
 import { useProjectStore } from '../store/projectStore'
 import { NumberField } from '../ui/NumberField'
 
@@ -11,7 +12,7 @@ function common<T>(items: Opening[], pick: (o: Opening) => T): T | null {
   return items.every((o) => pick(o) === v) ? v : null
 }
 
-function ParamInput({ field, value, onChange }: { field: ParamField; value: unknown; onChange: (v: unknown) => void }) {
+export function ParamInput({ field, value, onChange }: { field: ParamField; value: unknown; onChange: (v: unknown) => void }) {
   if (field.type === 'select') {
     return (
       <label className="field">
@@ -54,13 +55,35 @@ function ParamInput({ field, value, onChange }: { field: ParamField; value: unkn
  * Propriedades de portas e janelas. Os campos vêm da definição do componente na biblioteca
  * (limites, larguras comuns, peitoril, parâmetros próprios), então um componente novo já ganha este painel.
  */
+/** Área do cobogó e quantas peças comprar (peças cortadas contam como inteiras). */
+function CobogoEstimate({ opening }: { opening: Opening }) {
+  const project = useProjectStore((s) => s.project)
+  const def = getComponent(opening.componentId)
+  const piece = def.pieceSize?.(opening.params) ?? 25
+  const wall = project.walls[opening.wallId]
+  const h = Math.max(0, Math.min(opening.height, (wall?.height ?? opening.height) - opening.sillHeight))
+  const pieces = Math.ceil(opening.width / piece) * Math.ceil(h / piece)
+  return (
+    <>
+      <div className="field">
+        <span className="field-label">Área</span>
+        <span className="field-value">{formatArea(opening.width * h)}</span>
+      </div>
+      <div className="field" title="Peças cortadas nas bordas contam como inteiras. Considere uma sobra para quebras.">
+        <span className="field-label">Peças (estimativa)</span>
+        <span className="field-value">≈ {pieces}</span>
+      </div>
+    </>
+  )
+}
+
 export function OpeningProperties({ openings }: { openings: Opening[] }) {
   const project = useProjectStore((s) => s.project)
   const update = useProjectStore((s) => s.update)
   const ids: Id[] = openings.map((o) => o.id)
   const single = openings.length === 1 ? openings[0]! : null
   const defs = openings.map((o) => getComponent(o.componentId))
-  const def: ComponentDef = defs[0]!
+  const def: OpeningDef = defs[0]!
   const sameDef = defs.every((d) => d.id === def.id)
   const limits = {
     minWidth: Math.max(...defs.map((d) => d.limits.minWidth)),
@@ -96,17 +119,24 @@ export function OpeningProperties({ openings }: { openings: Opening[] }) {
                 const o = d.openings[single.id]!
                 o.componentId = next.id
                 o.params = { ...next.defaults.params }
-                // Trocar porta por janela (ou o contrário) ajusta altura e peitoril ao novo tipo.
-                if (next.hasSill !== def.hasSill) {
-                  o.height = next.defaults.height
+                // Trocar de família (porta, janela, cobogó) ajusta altura e peitoril ao novo tipo.
+                if (next.category !== def.category || next.fullHeight !== def.fullHeight) {
                   o.sillHeight = next.defaults.sillHeight
+                  const wallHeight = d.walls[o.wallId]?.height ?? next.defaults.height
+                  o.height = next.fullHeight ? Math.max(next.limits.minHeight, wallHeight - o.sillHeight) : next.defaults.height
                 }
               })
             }}
           >
-            {(['doors', 'windows'] as const).map((cat) => (
-              <optgroup key={cat} label={cat === 'doors' ? 'Portas' : 'Janelas'}>
-                {listByCategory(cat).map((c) => (
+            {(
+              [
+                ['doors', 'Portas'],
+                ['windows', 'Janelas'],
+                ['cobogo', 'Cobogós'],
+              ] as const
+            ).map(([cat, label]) => (
+              <optgroup key={cat} label={label}>
+                {openingsByCategory(cat).map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
@@ -197,7 +227,24 @@ export function OpeningProperties({ openings }: { openings: Opening[] }) {
         </>
       )}
 
+      {single && def.pieceSize && <CobogoEstimate opening={single} />}
+
       <div className="props-actions">
+        {single && def.fillsWall && (
+          <button
+            type="button"
+            className="btn outline"
+            disabled={openingsOnWall(project, single.wallId).length > 1}
+            title={
+              openingsOnWall(project, single.wallId).length > 1
+                ? 'Há outras portas ou janelas nesta parede'
+                : 'Estica o cobogó de uma ponta à outra da parede'
+            }
+            onClick={() => update('Cobogó na parede inteira', (d) => void fillWall(d, single.id))}
+          >
+            Ocupar a parede inteira
+          </button>
+        )}
         {defs.some((d) => d.sided) && (
           <button type="button" className="btn outline" onClick={() => commands.execute('opening.flipSide')} title="Inverter lado de abertura (F)">
             Inverter lado

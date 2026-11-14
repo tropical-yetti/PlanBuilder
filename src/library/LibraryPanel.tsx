@@ -3,9 +3,27 @@ import { useEditorStore } from '../store/editorStore'
 import { CATEGORIES, type CategoryId } from './categories'
 import { listByCategory, searchComponents } from './registry'
 import { SymbolSvg } from './SymbolSvg'
-import type { ComponentDef } from './types'
+import type { LibraryDef } from './types'
 
-function Card({ def }: { def: ComponentDef }) {
+/** Agrupa os componentes pelo subgrupo ("Camas", "Mesas"...), mantendo a ordem da lista. */
+function groupsOf(defs: LibraryDef[]): { name: string; defs: LibraryDef[] }[] {
+  const groups: { name: string; defs: LibraryDef[] }[] = []
+  for (const d of defs) {
+    const name = d.kind === 'item' ? d.group : ''
+    const g = groups.find((x) => x.name === name)
+    if (g) g.defs.push(d)
+    else groups.push({ name, defs: [d] })
+  }
+  return groups
+}
+
+function sizeOf(def: LibraryDef): string {
+  if (def.kind === 'opening') return `${def.defaults.width} × ${def.defaults.height} cm`
+  if (def.round) return `⌀ ${def.defaults.width} cm`
+  return `${def.defaults.width} × ${def.defaults.depth} cm`
+}
+
+function Card({ def }: { def: LibraryDef }) {
   const placing = useEditorStore((s) => s.placing)
   const startPlacing = useEditorStore((s) => s.startPlacing)
   const setTool = useEditorStore((s) => s.setTool)
@@ -14,7 +32,7 @@ function Card({ def }: { def: ComponentDef }) {
     <button
       type="button"
       className={`lib-card ${active ? 'active' : ''}`}
-      title={`${def.name} — clique e depois clique na parede, ou arraste para a planta`}
+      title={`${def.name} — ${def.kind === 'item' ? 'clique e depois clique na planta' : 'clique e depois clique na parede'}, ou arraste para a planta`}
       aria-pressed={active}
       draggable
       onClick={() => (active ? setTool('select') : startPlacing(def.id))}
@@ -31,7 +49,7 @@ function Card({ def }: { def: ComponentDef }) {
       <SymbolSvg def={def} size={64} />
       <span className="lib-name">{def.name}</span>
       <span className="lib-size">
-        {def.defaults.width} × {def.defaults.height} cm
+        {sizeOf(def)}
       </span>
     </button>
   )
@@ -90,13 +108,17 @@ export function LibraryPanel() {
                 <span className="lib-category-name">{c.name}</span>
                 <span className="badge">{c.available ? items.length : 'em breve'}</span>
               </button>
-              {open && (
-                <div className="lib-grid">
-                  {items.map((def) => (
-                    <Card key={def.id} def={def} />
-                  ))}
-                </div>
-              )}
+              {open &&
+                groupsOf(items).map((g) => (
+                  <div key={g.name || 'todos'}>
+                    {g.name && <h3 className="lib-group">{g.name}</h3>}
+                    <div className="lib-grid">
+                      {g.defs.map((def) => (
+                        <Card key={def.id} def={def} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
             </div>
           )
         })

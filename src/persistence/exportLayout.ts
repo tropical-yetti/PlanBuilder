@@ -1,5 +1,6 @@
 import { dimensionGeometry, textCorners } from '../model/annotations'
 import { boundsOf, type Rect } from '../model/geometry'
+import { itemCorners } from '../model/items'
 import { wallPolygons } from '../model/wallGeometry'
 import { openingCenter } from '../model/walls'
 import type { Point, Project } from '../model/types'
@@ -23,7 +24,7 @@ const MARGIN_PX = 48
 /** Lado máximo da imagem final: acima disso os navegadores podem falhar ao criar o canvas. */
 export const MAX_SIDE = 8192
 
-/** Tudo o que precisa caber na imagem: paredes, o giro das portas, cotas e textos. */
+/** Tudo o que precisa caber na imagem: paredes, o giro das portas, móveis, cotas e textos. */
 export function contentBounds(p: Project): Rect | null {
   const pts: Point[] = [...wallPolygons(p).values()].flatMap((w) => w.points)
   for (const o of Object.values(p.openings)) {
@@ -33,6 +34,11 @@ export function contentBounds(p: Project): Rect | null {
     pts.push({ x: c.x - o.width, y: c.y - o.width }, { x: c.x + o.width, y: c.y + o.width })
   }
   for (const t of Object.values(p.texts)) pts.push(...textCorners(t))
+  // Mesas com cadeiras ocupam um pouco além do tampo.
+  for (const it of Object.values(p.items)) {
+    const pad = it.componentId.startsWith('furniture.table') && it.params.chairs !== false ? 70 : 0
+    pts.push(...itemCorners({ ...it, width: it.width + pad, depth: it.depth + pad }))
+  }
   for (const d of Object.values(p.dimensions)) {
     const g = dimensionGeometry(d)
     pts.push(d.p1, d.p2, g.a, g.b)

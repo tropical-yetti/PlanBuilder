@@ -19,16 +19,30 @@ export interface OpeningDraft {
   valid: boolean
 }
 
+/** Móvel sendo inserido: segue o cursor e encosta nas paredes. */
+export interface ItemDraft {
+  kind: 'item'
+  componentId: string
+  x: number
+  y: number
+  rotation: number
+  width: number
+  depth: number
+  /** Encostado numa parede. */
+  attached: boolean
+}
+
 export type Draft =
   | { kind: 'wall'; a: Point; b: Point }
   | { kind: 'room'; a: Point; b: Point }
   | OpeningDraft
+  | ItemDraft
   /** Fita métrica temporária. */
   | { kind: 'measure'; a: Point; b: Point }
   /** Cota em criação: depois dos dois pontos, o cursor define o afastamento. */
   | { kind: 'dimension'; p1: Point; p2: Point; offset: number }
 
-export type HoverKind = 'wall' | 'node' | 'opening' | 'text' | 'dimension'
+export type HoverKind = 'wall' | 'node' | 'opening' | 'item' | 'text' | 'dimension'
 export type HoverTarget = { kind: HoverKind; id: Id }
 
 /**

@@ -1,34 +1,9 @@
 import type { Context } from 'konva/lib/Context'
 import { Group, Shape } from 'react-konva'
 import { getComponent } from '../../library/registry'
-import type { Prim } from '../../library/types'
+import { drawPrims } from '../drawPrims'
 import type { OpeningShape } from '../openingShapes'
 import { C } from '../theme'
-
-function drawPrims(ctx: Context, prims: Prim[], px: number, color: string) {
-  for (const p of prims) {
-    ctx.beginPath()
-    ctx.setAttr('lineWidth', (p.thin ? 1 : 1.5) * px)
-    ctx.setAttr('strokeStyle', color)
-    ctx.setLineDash('dash' in p && p.dash ? [4 * px, 3 * px] : [])
-    if (p.t === 'line') {
-      ctx.moveTo(p.pts[0]!, p.pts[1]!)
-      for (let i = 2; i < p.pts.length; i += 2) ctx.lineTo(p.pts[i]!, p.pts[i + 1]!)
-      ctx.stroke()
-    } else if (p.t === 'arc') {
-      ctx.arc(p.cx, p.cy, p.r, p.a0, p.a1, p.a1 < p.a0)
-      ctx.stroke()
-    } else {
-      ctx.rect(p.x, p.y, p.w, p.h)
-      if (p.fill) {
-        ctx.setAttr('fillStyle', p.fill === 'glass' ? C.glass : C.leaf)
-        ctx.fill()
-      }
-      ctx.stroke()
-    }
-  }
-  ctx.setLineDash([])
-}
 
 /** Uma abertura: "apaga" o trecho da parede (o vão) e desenha o símbolo do componente por cima. */
 export function OpeningGlyph({ s, pxPerCm, gapColor = C.canvas }: { s: OpeningShape; pxPerCm: number; /** Cor do fundo, usada para "apagar" a parede no vão. */ gapColor?: string }) {

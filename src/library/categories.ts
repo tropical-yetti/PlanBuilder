@@ -3,7 +3,7 @@
  * As categorias "em breve" aparecem desativadas para mostrar a organização final da biblioteca.
  */
 
-export type CategoryId = 'doors' | 'windows' | 'bathroom' | 'kitchen' | 'furniture' | 'appliances'
+export type CategoryId = 'doors' | 'windows' | 'cobogo' | 'furniture' | 'bathroom' | 'kitchen' | 'appliances'
 
 export interface Category {
   id: CategoryId
@@ -14,8 +14,9 @@ export interface Category {
 export const CATEGORIES: Category[] = [
   { id: 'doors', name: 'Portas', available: true },
   { id: 'windows', name: 'Janelas', available: true },
+  { id: 'cobogo', name: 'Cobogós', available: true },
+  { id: 'furniture', name: 'Móveis', available: true },
   { id: 'bathroom', name: 'Banheiro', available: false },
   { id: 'kitchen', name: 'Cozinha', available: false },
-  { id: 'furniture', name: 'Móveis', available: false },
   { id: 'appliances', name: 'Eletrodomésticos', available: false },
 ]

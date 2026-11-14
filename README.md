@@ -5,7 +5,8 @@ Editor web de plantas baixas em 2D com visualização 3D. Roda inteiramente no n
 ## O que o app faz
 
 - **Planta 2D:** paredes com medida digitada, cômodos retangulares, cantos sempre fechados, ajudas de precisão (pontas, meio, ângulos, alinhamento, grade).
-- **Portas e janelas:** biblioteca com 4 portas e 4 janelas, presas à parede, com medidas editáveis.
+- **Portas, janelas e cobogós:** 4 portas, 4 janelas e 2 tipos de cobogó (painel e faixa), presos à parede, com medidas editáveis e estimativa de peças de cobogó.
+- **Móveis:** sofás de 2 e 3 lugares, poltrona, mesas quadrada, retangular e redonda (com cadeiras) e camas em todos os tamanhos padrão (solteiro, solteirão, viúva, casal, queen e king). Sofás, camas e poltronas encostam sozinhos na parede.
 - **Áreas:** cômodos detectados automaticamente, área total, área útil, superfície de paredes (descontando vãos) e perímetros.
 - **Vista 3D:** gerada da planta, lado a lado ou em tela cheia.
 - **Produtividade:** copiar e colar, duplicar, girar, espelhar, alinhar, bloquear, camadas, cotas, textos, medir, histórico.
@@ -19,7 +20,8 @@ Tudo roda no navegador; nenhum dado sai do seu computador.
 |---|---|
 | Criar um cômodo | `A`, clique num canto, digite `400x300` e `Enter` (ou arraste) |
 | Desenhar parede por parede | `W`, clique em cada canto; digite o comprimento + `Enter`; `Esc` encerra |
-| Inserir porta ou janela | Clique no item da biblioteca e depois na parede (ou arraste) |
+| Inserir porta, janela ou cobogó | Clique no item da biblioteca e depois na parede (ou arraste) |
+| Inserir móvel | Clique no item da biblioteca e depois na planta; perto de uma parede ele encosta; `R` gira |
 | Selecionar e mover | `V`; arraste a parede, o canto ou a porta |
 | Dar nome a um cômodo | Duplo clique dentro dele |
 | Ver as áreas | Aba **Áreas** do painel lateral |
@@ -64,7 +66,7 @@ npx playwright install chromium
 | Pasta | Conteúdo |
 |---|---|
 | `src/model/` | Documento do projeto e as operações sobre ele (paredes, aberturas, áreas, transformações). Sem React |
-| `src/library/` | Biblioteca de componentes: um arquivo por porta ou janela |
+| `src/library/` | Biblioteca de componentes: portas, janelas, cobogós e móveis |
 | `src/editor2d/` | Canvas 2D (Konva), ferramentas e ajudas de precisão |
 | `src/viewer3d/` | Vista 3D (three.js) |
 | `src/commands/` | Registro único de comandos e atalhos |
@@ -72,7 +74,7 @@ npx playwright install chromium
 | `src/app/` | Telas, painéis e diálogos |
 | `e2e/` | Testes de ponta a ponta |
 
-Para criar um componente novo na biblioteca, copie um arquivo de `src/library/components/` e acrescente-o à lista de `src/library/registry.ts`.
+Para criar um componente novo na biblioteca, copie um arquivo de `src/library/components/` e acrescente-o à lista de `src/library/registry.ts`. Há dois tipos: `OpeningDef` (vai na parede: portas, janelas, cobogós) e `ItemDef` (solto no cômodo: móveis), descritos em `src/library/types.ts`.
 
 ## Fluxo de branches
 
