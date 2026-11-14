@@ -2,6 +2,8 @@
 
 Editor web de plantas baixas em 2D com visualização 3D. Roda inteiramente no navegador.
 
+**Use agora:** https://tropical-yetti.github.io/PlanBuilder/
+
 ## O que o app faz
 
 - **Planta 2D:** paredes com medida digitada, cômodos retangulares, cantos sempre fechados, ajudas de precisão (pontas, meio, ângulos, alinhamento, grade).
@@ -77,6 +79,12 @@ npx playwright install chromium
 | `e2e/` | Testes de ponta a ponta |
 
 Para criar um componente novo na biblioteca, copie um arquivo de `src/library/components/` e acrescente-o à lista de `src/library/registry.ts`. Há dois tipos: `OpeningDef` (vai na parede: portas, janelas, cobogós) e `ItemDef` (solto no cômodo: móveis), descritos em `src/library/types.ts`.
+
+## Publicação
+
+O site é publicado no GitHub Pages pelo workflow `.github/workflows/deploy.yml` a cada atualização da `main` (ou manualmente, em Actions → "Publicar no GitHub Pages" → Run workflow). O build usa o caminho base `/PlanBuilder/`.
+
+Configuração feita uma única vez no GitHub: Settings → Pages → Build and deployment → Source: **GitHub Actions**.
 
 ## Fluxo de branches
 
