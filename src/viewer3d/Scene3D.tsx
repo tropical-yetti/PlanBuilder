@@ -1,5 +1,5 @@
 import { Canvas, useThree } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { getComponent } from '../library/registry'
@@ -124,7 +124,7 @@ function framing(project: Project): Framing {
 }
 
 /** Câmera em órbita (arrastar gira, roda aproxima, botão direito desloca) e a "foto" para exportar. */
-function CameraRig({ frame, fitKey }: { frame: Framing; fitKey: string }) {
+function CameraRig({ frame, fitKey, onReady }: { frame: Framing; fitKey: string; onReady: () => void }) {
   const { camera, gl, scene, invalidate, size: viewport } = useThree()
   const aspect = viewport.width / Math.max(1, viewport.height)
   const aspectRef = useRef(aspect)
@@ -174,8 +174,9 @@ function CameraRig({ frame, fitKey }: { frame: Framing; fitKey: string }) {
         }, 'image/png')
       })
     })
+    onReady()
     return () => setCapturer(null)
-  }, [camera, gl, scene, invalidate])
+  }, [camera, gl, scene, invalidate, onReady])
 
   return null
 }
@@ -205,11 +206,14 @@ export default function Scene3D() {
   const selection = useEditorStore((s) => s.selection)
   const viewMode = useEditorStore((s) => s.viewMode)
   const [fitToken, setFitToken] = useState(0)
+  // A cena é montada alguns instantes depois do contêiner; `ready` avisa quando já pode ser exportada.
+  const [ready, setReady] = useState(false)
+  const onReady = useCallback(() => setReady(true), [])
   const frame = useMemo(() => framing(project), [project])
   const empty = Object.keys(project.walls).length === 0
 
   return (
-    <div className="scene3d" data-testid="scene3d">
+    <div className="scene3d" data-testid="scene3d" data-ready={ready}>
       {/* `flat`: sem ajuste de tom, as cores saem como definidas (paredes realmente claras). */}
       <Canvas flat frameloop="demand" camera={{ fov: 45, near: 0.1, far: 2000 }} gl={{ antialias: true }} dpr={[1, 2]}>
         <color attach="background" args={[COLORS.background]} />
@@ -224,7 +228,7 @@ export default function Scene3D() {
         </mesh>
         <World project={project} selection={selection} />
         {/* Trocar de projeto, alternar entre 3D e Dividido (a largura muda) ou clicar em Enquadrar reposiciona a câmera. */}
-        <CameraRig frame={frame} fitKey={`${project.id}:${viewMode}:${fitToken}`} />
+        <CameraRig frame={frame} fitKey={`${project.id}:${viewMode}:${fitToken}`} onReady={onReady} />
       </Canvas>
       {empty && <p className="placeholder scene3d-empty">Desenhe paredes na planta para vê-las em 3D.</p>}
       <div className="scene3d-tools">

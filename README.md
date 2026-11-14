@@ -2,6 +2,37 @@
 
 Editor web de plantas baixas em 2D com visualização 3D. Roda inteiramente no navegador.
 
+## O que o app faz
+
+- **Planta 2D:** paredes com medida digitada, cômodos retangulares, cantos sempre fechados, ajudas de precisão (pontas, meio, ângulos, alinhamento, grade).
+- **Portas e janelas:** biblioteca com 4 portas e 4 janelas, presas à parede, com medidas editáveis.
+- **Áreas:** cômodos detectados automaticamente, área total, área útil, superfície de paredes (descontando vãos) e perímetros.
+- **Vista 3D:** gerada da planta, lado a lado ou em tela cheia.
+- **Produtividade:** copiar e colar, duplicar, girar, espelhar, alinhar, bloquear, camadas, cotas, textos, medir, histórico.
+- **Arquivos:** salvamento automático no navegador, salvar e abrir `.planbuilder.json`, exportar PNG (planta ou 3D).
+
+Tudo roda no navegador; nenhum dado sai do seu computador.
+
+## Como usar
+
+| Para… | Faça |
+|---|---|
+| Criar um cômodo | `A`, clique num canto, digite `400x300` e `Enter` (ou arraste) |
+| Desenhar parede por parede | `W`, clique em cada canto; digite o comprimento + `Enter`; `Esc` encerra |
+| Inserir porta ou janela | Clique no item da biblioteca e depois na parede (ou arraste) |
+| Selecionar e mover | `V`; arraste a parede, o canto ou a porta |
+| Dar nome a um cômodo | Duplo clique dentro dele |
+| Ver as áreas | Aba **Áreas** do painel lateral |
+| Ver em 3D | Botões **Dividido** ou **3D**, no alto à direita |
+| Medir, cotar, escrever | `M`, `D`, `T` |
+| Desfazer / refazer | `Ctrl+Z` / `Ctrl+Shift+Z` |
+| Salvar em arquivo | `Ctrl+S` |
+| Exportar imagem | `Ctrl+Shift+E` |
+| Achar qualquer comando | `Ctrl+K` |
+| Ver todos os atalhos | `?` |
+
+O botão direito mostra as ações disponíveis para o objeto sob o cursor. No Mac, use `Cmd` no lugar de `Ctrl`.
+
 ## Rodando localmente
 
 Requer Node.js 22 ou mais recente.
@@ -17,9 +48,31 @@ Abra o endereço que aparecer no terminal (normalmente http://localhost:5173).
 |---|---|
 | `npm run dev` | Servidor de desenvolvimento com recarregamento automático |
 | `npm test` | Testes unitários (Vitest) |
+| `npm run e2e` | Testes de ponta a ponta no navegador (Playwright), contra o build de produção |
 | `npm run lint` | Verificação de código (oxlint) |
 | `npm run build` | Checagem de tipos + build de produção em `dist/` |
-| `npm run preview` | Serve o build de produção localmente |
+| `npm run preview` | Serve o build de produção em http://localhost:4173/PlanBuilder/ |
+
+Na primeira vez, os testes de ponta a ponta precisam do navegador de teste:
+
+```bash
+npx playwright install chromium
+```
+
+## Estrutura do código
+
+| Pasta | Conteúdo |
+|---|---|
+| `src/model/` | Documento do projeto e as operações sobre ele (paredes, aberturas, áreas, transformações). Sem React |
+| `src/library/` | Biblioteca de componentes: um arquivo por porta ou janela |
+| `src/editor2d/` | Canvas 2D (Konva), ferramentas e ajudas de precisão |
+| `src/viewer3d/` | Vista 3D (three.js) |
+| `src/commands/` | Registro único de comandos e atalhos |
+| `src/persistence/` | Salvamento automático, arquivos e exportação |
+| `src/app/` | Telas, painéis e diálogos |
+| `e2e/` | Testes de ponta a ponta |
+
+Para criar um componente novo na biblioteca, copie um arquivo de `src/library/components/` e acrescente-o à lista de `src/library/registry.ts`.
 
 ## Fluxo de branches
 

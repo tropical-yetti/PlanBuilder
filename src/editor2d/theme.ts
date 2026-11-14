@@ -16,6 +16,8 @@ export const C = {
   gridMajor: '#d2d8e1',
   wallFill: '#4b5563',
   wallStroke: '#1f2937',
+  wallLocked: '#9aa3b2',
+  locked: '#9aa3b2',
   wallHover: '#6b7280',
   wallSelected: '#2563eb',
   wallErase: '#dc2626',

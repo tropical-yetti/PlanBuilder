@@ -5,6 +5,24 @@ desenhar uma planta correta em poucos minutos.
 
 ---
 
+## Situação
+
+O MVP (fases 0 a 7 da seção 9) está implementado na branch `dev`. O próximo passo é o roadmap da seção 11.
+
+Diferenças em relação ao que este plano previa:
+
+| Previsto | Como ficou |
+|---|---|
+| Ordem das fases 3 a 6 | Mantida como na seção 9; o salvamento automático simples foi antecipado para a fase 1 |
+| Duplo clique no cômodo seleciona suas paredes | O duplo clique renomeia o cômodo; selecionar as paredes fica no botão direito |
+| `build3D` e `thumbnail` no contrato do componente | O componente tem `symbol()` (planta e miniatura) e `model()` (3D) |
+| `polygon-clipping` | Trocado por `polyclip-ts` (mesma função, mais robusto) |
+| `drei` para a câmera 3D | Usado o `OrbitControls` do próprio three.js, sem a dependência extra |
+| Alça de giro livre, `Tab` entre objetos sobrepostos | Não implementados (há o giro por ângulo digitado) |
+| Ferramentas Parede: "comprimento com âncora", "converter cômodo" | A âncora está no painel de propriedades; mudar a espessura de um cômodo é selecionar suas paredes e editar em lote |
+
+---
+
 ## 1. Referências e o que copiar de cada uma
 
 | App | O que fazem bem | O que adotamos |

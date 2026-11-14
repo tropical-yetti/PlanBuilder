@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './app/App'
+import { ErrorBoundary } from './app/ErrorBoundary'
 import './index.css'
 import { startAutosave } from './persistence/autosave'
 
@@ -12,6 +13,8 @@ if (!root) throw new Error('Elemento #root não encontrado')
 
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 )

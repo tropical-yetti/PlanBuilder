@@ -55,11 +55,12 @@ export function Canvas2D() {
     () => new Set(selection.filter((id) => project.walls[id] || project.openings[id] || project.texts[id] || project.dimensions[id])),
     [selection, project.walls, project.openings, project.texts, project.dimensions],
   )
+  const lockedWalls = useMemo(() => new Set(Object.values(project.walls).filter((w) => w.locked).map((w) => w.id)), [project.walls])
   const hoveredOpening = hover?.kind === 'opening' ? hover.id : null
   const openings = useMemo(
     () =>
       openingShapes(project, (id) =>
-        selected.has(id) ? C.accent : hoveredOpening === id ? (toolId === 'erase' ? C.invalid : C.wallHover) : C.opening,
+        selected.has(id) ? C.accent : hoveredOpening === id ? (toolId === 'erase' ? C.invalid : C.wallHover) : project.openings[id]?.locked ? C.locked : C.opening,
       ),
     [project, selected, hoveredOpening, toolId],
   )
@@ -235,7 +236,7 @@ export function Canvas2D() {
           {layers.grid && <GridLayer view={view} width={size.width} height={size.height} />}
           <RoomLayer rooms={rooms} pxPerCm={view.scale} highlighted={highlightRoom} editing={renamingRoom?.key ?? null} showLabels={layers.roomLabels} />
           </Layer>
-          <WallLayer polygons={polygons} selected={selected} hovered={hoveredWall} hoverColor={hoverColor} />
+          <WallLayer polygons={polygons} selected={selected} hovered={hoveredWall} hoverColor={hoverColor} locked={lockedWalls} />
           <Layer listening={false}>
           {layers.openings && <OpeningLayer shapes={openings} pxPerCm={view.scale} />}
           <AnnotationLayer

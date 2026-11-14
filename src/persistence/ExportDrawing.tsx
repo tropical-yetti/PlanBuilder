@@ -26,7 +26,7 @@ export function ExportDrawing({ project, layout, options, onStage }: { project: 
         {options.grid && <GridLayer view={view} width={layout.width} height={layout.height} />}
         <RoomLayer rooms={quantities(project).rooms} pxPerCm={k} highlighted={null} editing={null} showLabels={options.roomLabels} />
       </Layer>
-      <WallLayer polygons={polygons} selected={NONE} hovered={null} hoverColor={C.wallFill} />
+      <WallLayer polygons={polygons} selected={NONE} hovered={null} hoverColor={C.wallFill} locked={NONE} />
       <Layer listening={false}>
         <OpeningLayer shapes={openingShapes(project, () => C.opening)} pxPerCm={k} gapColor="#ffffff" />
         <AnnotationLayer project={project} pxPerCm={k} selected={NONE} hovered={null} hoverColor={C.annotation} showDimensions showTexts editingText={null} />

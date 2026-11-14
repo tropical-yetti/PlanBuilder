@@ -6,7 +6,7 @@ import { centerOpening, commonWall, distributeOpenings, openingsOnWall } from '.
 import { allSelectable, deleteLabel, deleteObjects } from '../model/selection'
 import { canMergeWalls, mergeWalls, nodePos, splitWall } from '../model/walls'
 import type { Id } from '../model/types'
-import { hasContent, newProject, openProject, saveProject } from '../persistence/projectFile'
+import { hasContent, loadSample, newProject, openProject, saveProject } from '../persistence/projectFile'
 import { useEditorStore } from '../store/editorStore'
 import { selectCanRedo, selectCanUndo, useProjectStore } from '../store/projectStore'
 import type { CommandRegistry } from './registry'
@@ -23,6 +23,7 @@ export function registerBuiltinCommands(registry: CommandRegistry): () => void {
   const disposers = [
     // Arquivo
     registry.register({ id: 'file.new', label: 'Novo projeto', category: 'Arquivo', run: newProject }),
+    registry.register({ id: 'file.sample', label: 'Abrir o projeto de exemplo', category: 'Arquivo', run: loadSample }),
     registry.register({ id: 'file.open', label: 'Abrir projeto…', category: 'Arquivo', shortcuts: ['Ctrl+O'], run: openProject }),
     registry.register({
       id: 'file.save',

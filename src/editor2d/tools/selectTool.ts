@@ -38,6 +38,8 @@ export function createSelectTool(): Tool {
   /** Objetos arrastados juntos e o deslocamento já aplicado a eles. */
   let moveIds: Id[] = []
   let applied: Point = { x: 0, y: 0 }
+  /** O cursor está sobre um objeto bloqueado (mostra o cursor de "não permitido"). */
+  let overLocked = false
 
   const draggingDoc = () => moved && (mode === 'node' || mode === 'wall' || mode === 'opening' || mode === 'move')
 
@@ -115,7 +117,7 @@ export function createSelectTool(): Tool {
       const h = ui().hover
       if (h?.kind === 'node') return 'move'
       if (h) return 'pointer'
-      return 'default'
+      return overLocked ? 'not-allowed' : 'default'
     },
 
     onPointerDown(e) {
@@ -167,7 +169,9 @@ export function createSelectTool(): Tool {
     onPointerMove(e) {
       ui().set({ cursor: e.world })
       if (mode === 'idle') {
-        ui().set({ hover: hitTest(project(), e.world, pxPerCm()) })
+        const hover = hitTest(project(), e.world, pxPerCm())
+        overLocked = !hover && !!hitTest(project(), e.world, pxPerCm(), { nodes: false, includeLocked: true })
+        ui().set({ hover })
         return
       }
       if (mode === 'none') return
