@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { getComponent, getItem } from '../library/registry'
-import type { Box3, Material } from '../library/types'
+import { ELEVATION_PARAM, type Box3, type Material } from '../library/types'
 import { angleOf, boundsOf, normalize, sub } from '../model/geometry'
 import { quantities, type Room } from '../model/quantities'
 import { wallPolygons } from '../model/wallGeometry'
@@ -41,6 +41,8 @@ const MATERIALS: Record<Exclude<Material, 'glass'>, string> = {
   steel: '#c9ced4',
   enamel: '#f5f6f7',
   dark: '#2b2f36',
+  cabinet: '#f4f2ee',
+  stone: '#8e8a86',
 }
 
 /** Contorno em planta → forma do three. O y da planta vira o z da cena (por isso o sinal trocado). */
@@ -125,6 +127,12 @@ function OpeningModel({ project, o }: { project: Project; o: Opening }) {
   )
 }
 
+/** Altura do piso até a base do móvel (armário aéreo, lava-louças de bancada); 0 para os demais. */
+function elevationOf(item: Item): number {
+  const v = item.params[ELEVATION_PARAM]
+  return typeof v === 'number' && Number.isFinite(v) ? Math.max(0, v) : 0
+}
+
 function ItemModel({ item }: { item: Item }) {
   const boxes = useMemo(
     () => getItem(item.componentId).model({ width: item.width, depth: item.depth, height: item.height, params: item.params }),
@@ -132,7 +140,7 @@ function ItemModel({ item }: { item: Item }) {
   )
   // Mesmo sistema das aberturas: x local na largura, z local na profundidade (a frente do móvel).
   return (
-    <group position={[item.x, 0, item.y]} rotation={[0, (-item.rotation * Math.PI) / 180, 0]} scale={[item.mirrored ? -1 : 1, 1, 1]}>
+    <group position={[item.x, elevationOf(item), item.y]} rotation={[0, (-item.rotation * Math.PI) / 180, 0]} scale={[item.mirrored ? -1 : 1, 1, 1]}>
       {boxes.map((box, i) => (
         <BoxMesh key={i} b={box} />
       ))}

@@ -85,6 +85,10 @@ export function createSampleProject(): Project {
   furniture('furniture.bed-double', { x: 700, y: 175 })
   furniture('appliance.fridge-duplex', { x: 520, y: 560 })
   furniture('appliance.stove-4', { x: 640, y: 560 })
+  // pia sob a janela da cozinha, com um armário aéreo ao lado e a lava-louças junto à pia
+  furniture('kitchen.sink-cabinet', { x: 760, y: 480 })
+  furniture('kitchen.wall-cabinet', { x: 780, y: 395 })
+  furniture('appliance.dishwasher-14', { x: 760, y: 385 })
 
   label(p, 220, 180, 'Sala')
   label(p, 625, 170, 'Quarto')

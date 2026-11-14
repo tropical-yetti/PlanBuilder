@@ -116,3 +116,44 @@ test('eletrodomésticos e porta sanfonada', async ({ page }) => {
   await expect(page.locator('.area-row', { hasText: 'Porta sanfonada' })).toContainText('1')
   await expect(page.locator('.area-row', { hasText: 'Fogão 5 bocas' })).toContainText('1')
 })
+
+test('gabinetes de cozinha e lavanderia e lava-louças', async ({ page }) => {
+  await openApp(page)
+  await drawRoom(page, -200, -150, '400x300')
+  const w = await world(page)
+  const place = async (name: string, x: number, y: number) => {
+    await page.locator('.lib-card', { hasText: name }).first().click()
+    await w.click(x, y)
+    await page.keyboard.press('Escape')
+  }
+
+  // Gabinete de pia encostado na parede de cima, com cuba dupla
+  await place('Gabinete de pia', -100, -110)
+  await expect(page.locator('.props-title')).toHaveText('Gabinete de pia')
+  await page.getByRole('button', { name: '150 cm', exact: true }).click()
+  await page.locator('.field:has-text("Cuba") select').selectOption('2')
+
+  // Armário aéreo acima, a 150 cm do piso; a altura do piso é editável
+  await place('Armário aéreo', -100, -130)
+  await expect(page.locator('.field:has-text("Altura do piso") input')).toHaveValue('150')
+  await page.locator('.field:has-text("Altura do piso") input').fill('160')
+  await page.keyboard.press('Enter')
+
+  // Lava-louças de 14 serviços ao lado da pia
+  await place('Lava-louças 14 serviços', 30, -110)
+  await expect(page.locator('.field:has-text("Largura") input')).toHaveValue('59,8')
+
+  // Lavanderia: tanque na parede de baixo
+  await place('Gabinete com tanque', 120, 100)
+
+  const project = (await savedProject(page)) as unknown as { items: Record<string, SavedItem & { params: Record<string, unknown> }> }
+  const items = Object.values(project.items)
+  expect(items.map((it) => it.componentId)).toEqual(['kitchen.sink-cabinet', 'kitchen.wall-cabinet', 'appliance.dishwasher-14', 'laundry.tank-cabinet'])
+  expect(items[0]).toMatchObject({ width: 150, depth: 60, rotation: 0, params: { basins: 2 } })
+  expect(items[0]!.y - 30).toBeCloseTo(-142.5) // fundo encostado na parede
+  expect(items[1]).toMatchObject({ depth: 35, params: { elevation: 160 } })
+  expect(items[3]).toMatchObject({ rotation: 180 }) // encostado na parede de baixo
+
+  await page.getByRole('radio', { name: 'Dividido' }).click()
+  await expect(page.locator('[data-testid=scene3d]')).toHaveAttribute('data-ready', 'true', { timeout: 30_000 })
+})

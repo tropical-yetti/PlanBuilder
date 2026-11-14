@@ -10,7 +10,7 @@
 import type { CategoryId } from './categories'
 
 /** Preenchimentos do símbolo 2D. */
-export type PrimFill = 'leaf' | 'glass' | 'solid' | 'soft' | 'wood' | 'concrete' | 'steel' | 'dark'
+export type PrimFill = 'leaf' | 'glass' | 'solid' | 'soft' | 'wood' | 'concrete' | 'steel' | 'dark' | 'stone'
 
 /**
  * Primitivas do símbolo 2D, em centímetros, no sistema local do componente:
@@ -50,6 +50,10 @@ export type Material =
   | 'steel'
   /** Esmaltado branco (lavadoras). */
   | 'enamel'
+  /** Laminado branco dos armários. */
+  | 'cabinet'
+  /** Pedra do tampo (granito). */
+  | 'stone'
   /** Vidro escuro / ferro fundido (mesa do fogão, porta do forno). */
   | 'dark'
 
@@ -138,6 +142,12 @@ export interface ItemPreset {
   width: number
   depth: number
 }
+
+/**
+ * Parâmetro opcional de móveis pendurados ou apoiados (armário aéreo, lava-louças de bancada):
+ * `params.elevation` é a altura, em cm, do piso até a base do móvel. A vista 3D o coloca nessa altura.
+ */
+export const ELEVATION_PARAM = 'elevation'
 
 export interface ItemDef {
   id: string

@@ -97,6 +97,7 @@ export function ItemProperties({ items }: { items: Item[] }) {
       )}
       {sameDef && def.presets && (
         <div className="preset-list" role="group" aria-label="Tamanhos padrão">
+          <span className="preset-label">Tamanhos comuns</span>
           {def.presets.map((pr) => {
             const active = width === pr.width && depth === pr.depth
             return (
