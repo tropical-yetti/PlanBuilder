@@ -1,5 +1,6 @@
 import { Circle, Group, Label, Layer, Line, Rect, Tag, Text } from 'react-konva'
 import { add, angleOf, dist, midpoint, normalize, perp, scale, sub } from '../../model/geometry'
+import { getItem } from '../../library/registry'
 import { distancesToEnds } from '../../model/openings'
 import { formatCm, formatMeters } from '../../model/units'
 import { wallEnds } from '../../model/walls'
@@ -9,6 +10,7 @@ import type { InteractionState } from '../interactionStore'
 import type { SnapResult } from '../snapping'
 import { C } from '../theme'
 import { DimensionGlyph } from './AnnotationLayer'
+import { ItemGlyph } from './ItemLayer'
 import { OpeningGlyph } from './OpeningLayer'
 
 interface Props {
@@ -238,6 +240,10 @@ export function OverlayLayer({ project, polygons, pxPerCm: k, selected, interact
       })}
 
       {draft?.kind === 'wall' && <DraftWall a={draft.a} b={draft.b} thickness={thickness} k={k} typed={typed} />}
+      {draft?.kind === 'item' && (
+        <ItemGlyph pxPerCm={k} ghost color={C.accent} item={{ ...draft, mirrored: false, params: getItem(draft.componentId).defaults.params }} />
+      )}
+
       {draft?.kind === 'opening' && (
         <Group>
           <OpeningGlyph

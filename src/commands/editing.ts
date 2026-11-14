@@ -27,13 +27,13 @@ export function registerEditingCommands(registry: CommandRegistry): () => void {
   /** Selecionados que existem e não estão bloqueados. */
   const selected = (): Id[] => {
     const p = project()
-    return editor().selection.filter((id) => (p.walls[id] || p.openings[id] || p.texts[id] || p.dimensions[id]) && !isLocked(p, id))
+    return editor().selection.filter((id) => (p.walls[id] || p.openings[id] || p.items[id] || p.texts[id] || p.dimensions[id]) && !isLocked(p, id))
   }
   const sel = () => classify(project(), selected())
   /** Objetos que podem ser movidos livremente (aberturas só andam ao longo da parede). */
   const movable = (): Id[] => {
     const c = sel()
-    return [...c.walls, ...c.texts, ...c.dimensions].map((o) => o.id)
+    return [...c.walls, ...c.items, ...c.texts, ...c.dimensions].map((o) => o.id)
   }
   const context = () => editor().contextMenu
   const writeSystemClipboard = (text: string | null) => {

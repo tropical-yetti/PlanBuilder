@@ -1,3 +1,4 @@
+import { getItem } from '../../library/registry'
 import { dist, dot, normalize, perp, sub } from '../../model/geometry'
 import { fitOpeningsToWalls, moveOpening } from '../../model/openings'
 import { roomAt } from '../../model/quantities'
@@ -8,10 +9,10 @@ import type { Id, Point, Project } from '../../model/types'
 import { hitTest, hitWall, objectsInBox } from '../hitTest'
 import { snapPoint } from '../snapping'
 import { docStore, editor, project, pxPerCm, ui } from './context'
-import { nearestWall, snapOffset } from './placeTool'
+import { nearestWall, placeItem, snapOffset } from './placeTool'
 import type { PointerInfo, Tool } from './types'
 
-type Mode = 'idle' | 'node' | 'wall' | 'opening' | 'move' | 'box' | 'none'
+type Mode = 'idle' | 'node' | 'wall' | 'opening' | 'item' | 'move' | 'box' | 'none'
 
 /** Distância mínima (px) para um clique virar arraste. */
 const DRAG_PX = 4
@@ -21,6 +22,7 @@ const DRAG_PX = 4
  * - Arrastar um canto move o canto.
  * - Arrastar uma parede sozinha a move em paralelo (as vizinhas esticam).
  * - Arrastar uma porta ou janela a desliza pela parede (ou a leva para outra parede).
+ * - Arrastar um móvel o move; sofás, camas e poltronas encostam o fundo na parede ao chegar perto dela.
  * - Arrastar um texto, uma cota ou qualquer objeto de uma seleção múltipla move tudo junto.
  * - Duplo clique: na parede insere um nó; no texto edita; dentro de um cômodo edita o nome.
  */
@@ -33,6 +35,9 @@ export function createSelectTool(): Tool {
   let nodeId: Id | null = null
   let wallId: Id | null = null
   let openingId: Id | null = null
+  /** Móvel arrastado e a posição dele no começo do arraste. */
+  let itemId: Id | null = null
+  let itemStart = { x: 0, y: 0, rotation: 0 }
   /** Distância, ao longo da parede, entre o ponto agarrado e o centro da abertura. */
   let grab = 0
   /** Objetos arrastados juntos e o deslocamento já aplicado a eles. */
@@ -41,7 +46,7 @@ export function createSelectTool(): Tool {
   /** O cursor está sobre um objeto bloqueado (mostra o cursor de "não permitido"). */
   let overLocked = false
 
-  const draggingDoc = () => moved && (mode === 'node' || mode === 'wall' || mode === 'opening' || mode === 'move')
+  const draggingDoc = () => moved && (mode === 'node' || mode === 'wall' || mode === 'opening' || mode === 'item' || mode === 'move')
 
   function end() {
     mode = 'idle'
@@ -50,6 +55,7 @@ export function createSelectTool(): Tool {
     nodeId = null
     wallId = null
     openingId = null
+    itemId = null
     moveIds = []
     applied = { x: 0, y: 0 }
     ui().set({ box: null, snap: null })
@@ -88,6 +94,21 @@ export function createSelectTool(): Tool {
     applied = total
     const ids = moveIds
     docStore().update('Seleção movida', (d) => shiftSelection(d, ids, delta))
+  }
+
+  function dragItem(e: PointerInfo) {
+    const it = project().items[itemId!]
+    if (!it) return
+    const center = { x: itemStart.x + e.world.x - pressWorld.x, y: itemStart.y + e.world.y - pressWorld.y }
+    // Ao sair de perto da parede, o móvel volta ao giro que tinha antes de encostar.
+    const pos = placeItem(project(), getItem(it.componentId), center, it, itemStart.rotation, pxPerCm(), e.alt)
+    const id = it.id
+    docStore().update('Móvel movido', (d) => {
+      const target = d.items[id]!
+      target.x = pos.x
+      target.y = pos.y
+      target.rotation = pos.rotation
+    })
   }
 
   function dragOpening(e: PointerInfo) {
@@ -150,8 +171,15 @@ export function createSelectTool(): Tool {
       // Vários objetos selecionados (ou um texto/cota): arrastar move tudo junto.
       if (c.count > 1 || hit.kind === 'text' || hit.kind === 'dimension') {
         // Aberturas andam com as suas paredes; sozinhas, não entram no arraste em grupo.
-        moveIds = [...c.walls, ...c.texts, ...c.dimensions].map((o) => o.id)
+        moveIds = [...c.walls, ...c.items, ...c.texts, ...c.dimensions].map((o) => o.id)
         mode = moveIds.length > 0 ? 'move' : 'none'
+        return
+      }
+      if (hit.kind === 'item') {
+        const it = p.items[hit.id]!
+        mode = 'item'
+        itemId = it.id
+        itemStart = { x: it.x, y: it.y, rotation: it.rotation }
         return
       }
       if (hit.kind === 'opening') {
@@ -181,11 +209,13 @@ export function createSelectTool(): Tool {
         if (mode === 'node') docStore().begin('Canto movido')
         if (mode === 'wall') docStore().begin('Parede movida')
         if (mode === 'opening') docStore().begin('Abertura movida')
+        if (mode === 'item') docStore().begin('Móvel movido')
         if (mode === 'move') docStore().begin(moveIds.length > 1 ? 'Seleção movida' : 'Objeto movido')
       }
       if (mode === 'node') dragNode(e)
       else if (mode === 'wall') dragWall(e)
       else if (mode === 'opening') dragOpening(e)
+      else if (mode === 'item') dragItem(e)
       else if (mode === 'move') dragMove(e)
       else if (mode === 'box') ui().set({ box: { a: pressWorld, b: e.world } })
     },
@@ -217,7 +247,7 @@ export function createSelectTool(): Tool {
           docStore().update('Seleção movida', (d) => settleSelection(d, ids))
           docStore().commit()
         }
-      } else if (mode === 'opening') {
+      } else if (mode === 'opening' || mode === 'item') {
         if (moved) docStore().commit()
       } else if (mode === 'box') {
         if (moved) {

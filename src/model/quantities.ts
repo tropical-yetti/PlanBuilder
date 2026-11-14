@@ -3,6 +3,7 @@
  * do documento só se usam os nomes dos cômodos (`roomLabels`). Áreas em cm², comprimentos em cm.
  */
 import { difference, union } from 'polyclip-ts'
+import { getComponent } from '../library/registry'
 import { dist, midpoint, normalize, perp, pointInPolygon, scale, sub, add } from './geometry'
 import { detectFaces, type Face } from './rooms'
 import type { Id, Point, Project } from './types'
@@ -63,6 +64,10 @@ export interface Quantities {
   /** Área total dos vãos de portas e janelas. */
   openingsArea: number
   openingCounts: OpeningCount[]
+  /** Cobogós: área (já incluída em `openingsArea`) e estimativa de peças. */
+  cobogo: { area: number; pieces: number }
+  /** Quantidade de cada móvel. */
+  itemCounts: OpeningCount[]
   /** Faces de cada parede: esquerda e direita em relação ao sentido a → b. */
   wallSides: Map<Id, { left: WallSide; right: WallSide }>
 }
@@ -162,6 +167,12 @@ function interiorPoint(mp: MultiPoly): Point {
 
 // ---------------------------------------------------------------------------------------------
 
+function countBy(ids: string[]): OpeningCount[] {
+  const m = new Map<string, number>()
+  for (const id of ids) m.set(id, (m.get(id) ?? 0) + 1)
+  return [...m].map(([componentId, count]) => ({ componentId, count }))
+}
+
 function roomKey(face: Face): string {
   return [...face.wallIds].sort().join('|')
 }
@@ -222,6 +233,7 @@ function compute(p: Project): Quantities {
   // Superfície das paredes: cada face (esquerda/direita) é interna de um cômodo ou externa.
   const openingAreaByWall = new Map<Id, number>()
   let openingsArea = 0
+  const cobogo = { area: 0, pieces: 0 }
   const countById = new Map<string, number>()
   for (const o of Object.values(p.openings)) {
     const w = p.walls[o.wallId]
@@ -231,6 +243,12 @@ function compute(p: Project): Quantities {
     openingAreaByWall.set(w.id, (openingAreaByWall.get(w.id) ?? 0) + a)
     openingsArea += a
     countById.set(o.componentId, (countById.get(o.componentId) ?? 0) + 1)
+    const piece = getComponent(o.componentId).pieceSize?.(o.params)
+    if (piece) {
+      cobogo.area += a
+      // peças inteiras por vão: as cortadas também precisam ser compradas
+      cobogo.pieces += Math.ceil(o.width / piece) * Math.ceil(h / piece)
+    }
   }
 
   const wallSides = new Map<Id, { left: WallSide; right: WallSide }>()
@@ -270,6 +288,8 @@ function compute(p: Project): Quantities {
     wallLength,
     openingsArea,
     openingCounts: [...countById].map(([componentId, count]) => ({ componentId, count })),
+    cobogo,
+    itemCounts: countBy(Object.values(p.items).map((it) => it.componentId)),
     wallSides,
   }
 }

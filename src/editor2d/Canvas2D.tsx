@@ -8,6 +8,7 @@ import { useInteractionStore } from './interactionStore'
 import { hitTest } from './hitTest'
 import { AnnotationLayer } from './layers/AnnotationLayer'
 import { GridLayer } from './layers/GridLayer'
+import { ItemLayer } from './layers/ItemLayer'
 import { OpeningLayer } from './layers/OpeningLayer'
 import { openingShapes } from './openingShapes'
 import { OverlayLayer } from './layers/OverlayLayer'
@@ -52,11 +53,15 @@ export function Canvas2D() {
 
   const polygons = useMemo(() => [...wallPolygons(project).values()], [project])
   const selected = useMemo(
-    () => new Set(selection.filter((id) => project.walls[id] || project.openings[id] || project.texts[id] || project.dimensions[id])),
-    [selection, project.walls, project.openings, project.texts, project.dimensions],
+    () => new Set(selection.filter((id) => project.walls[id] || project.openings[id] || project.items[id] || project.texts[id] || project.dimensions[id])),
+    [selection, project.walls, project.openings, project.items, project.texts, project.dimensions],
   )
   const lockedWalls = useMemo(() => new Set(Object.values(project.walls).filter((w) => w.locked).map((w) => w.id)), [project.walls])
   const hoveredOpening = hover?.kind === 'opening' ? hover.id : null
+  const hoveredItem = hover?.kind === 'item' ? hover.id : null
+  const items = useMemo(() => Object.values(project.items), [project.items])
+  const itemColor = (id: string) =>
+    selected.has(id) ? C.accent : hoveredItem === id ? (toolId === 'erase' ? C.invalid : C.wallHover) : project.items[id]?.locked ? C.locked : C.furniture
   const openings = useMemo(
     () =>
       openingShapes(project, (id) =>
@@ -238,7 +243,9 @@ export function Canvas2D() {
           </Layer>
           <WallLayer polygons={polygons} selected={selected} hovered={hoveredWall} hoverColor={hoverColor} locked={lockedWalls} />
           <Layer listening={false}>
+          {layers.items && <ItemLayer items={items} pxPerCm={view.scale} colorOf={itemColor} />}
           {layers.openings && <OpeningLayer shapes={openings} pxPerCm={view.scale} />}
+          <RoomLayer part="labels" rooms={rooms} pxPerCm={view.scale} highlighted={highlightRoom} editing={renamingRoom?.key ?? null} showLabels={layers.roomLabels} />
           <AnnotationLayer
             project={project}
             pxPerCm={view.scale}

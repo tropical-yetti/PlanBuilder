@@ -1,9 +1,11 @@
-import { getComponent } from '../../library/registry'
+import { getComponent, getDef, getItem } from '../../library/registry'
+import type { ItemDef } from '../../library/types'
+import { addItem, normalizeAngle, snapToWall } from '../../model/items'
 import { angleOf, dot, normalize, perp, projectOnSegment, sub } from '../../model/geometry'
 import { addOpening, clampOffset, isOpeningValid } from '../../model/openings'
 import { wallEnds, wallLength } from '../../model/walls'
 import type { Id, Point, Project } from '../../model/types'
-import type { OpeningDraft } from '../interactionStore'
+import type { ItemDraft, OpeningDraft } from '../interactionStore'
 import { docStore, editor, project, pxPerCm, ui } from './context'
 import type { PointerInfo, Tool } from './types'
 
@@ -37,18 +39,54 @@ export function snapOffset(p: Project, wallId: Id, rawOffset: number, width: num
   return clampOffset(p, wallId, off, width)
 }
 
+/** Distância (px) entre o fundo do móvel e a face da parede em que ele encosta sozinho. */
+export const ITEM_ATTACH_PX = 30
+
 /**
- * Inserção de componentes da biblioteca: o componente segue o cursor, gruda na parede mais próxima
- * e abre para o lado em que o cursor está. Clique insere; F inverte a dobradiça; Esc sai.
+ * Posição de um móvel para o cursor: encosta na parede (se o componente pede e o cursor está perto)
+ * ou fica solto, com o centro arredondado a 1 cm e a rotação escolhida. Alt desliga o encostar.
+ */
+export function placeItem(
+  p: Project,
+  def: Pick<ItemDef, 'againstWall'>,
+  center: Point,
+  size: { depth: number },
+  rotation: number,
+  k: number,
+  alt: boolean,
+): { x: number; y: number; rotation: number; attached: boolean } {
+  if (def.againstWall && !alt) {
+    const snap = snapToWall(p, center, size.depth, ITEM_ATTACH_PX / k)
+    if (snap) return { x: snap.x, y: snap.y, rotation: snap.rotation, attached: true }
+  }
+  const step = alt ? 0.01 : 1
+  return { x: Math.round(center.x / step) * step, y: Math.round(center.y / step) * step, rotation, attached: false }
+}
+
+/**
+ * Inserção de componentes da biblioteca.
+ * - Portas, janelas e cobogós seguem o cursor, grudam na parede mais próxima e abrem para o lado do cursor.
+ *   F inverte a dobradiça.
+ * - Móveis seguem o cursor; sofás, camas e poltronas encostam o fundo na parede mais próxima. R gira 90°.
+ * Clique insere (dá para inserir vários seguidos); Esc sai.
  */
 export function createPlaceTool(): Tool {
   let flipHinge = false
   let lastSide = false
+  /** Giro escolhido com R para móveis soltos. */
+  let itemRotation = 0
   let last: PointerInfo | null = null
 
-  function compute(e: PointerInfo): OpeningDraft | null {
+  function computeItem(e: PointerInfo, def: ItemDef): ItemDraft {
+    const pos = placeItem(project(), def, e.world, { depth: def.defaults.depth }, itemRotation, pxPerCm(), e.alt)
+    return { kind: 'item', componentId: def.id, width: def.defaults.width, depth: def.defaults.depth, ...pos }
+  }
+
+  function compute(e: PointerInfo): OpeningDraft | ItemDraft | null {
     const id = editor().placing
     if (!id) return null
+    const any = getDef(id)
+    if (any?.kind === 'item') return computeItem(e, any)
     const def = getComponent(id)
     const p = project()
     const k = pxPerCm()
@@ -80,6 +118,9 @@ export function createPlaceTool(): Tool {
     }
   }
 
+  const insertLabel = (category: string) =>
+    category === 'doors' ? 'Porta inserida' : category === 'windows' ? 'Janela inserida' : category === 'cobogo' ? 'Cobogó inserido' : 'Móvel inserido'
+
   return {
     cursor: () => {
       const d = ui().draft
@@ -95,23 +136,44 @@ export function createPlaceTool(): Tool {
       if (e.button !== 0) return
       last = e
       const d = compute(e)
-      if (!d || !d.wallId || !d.valid) return
-      const def = getComponent(d.componentId)
-      const wallId = d.wallId
+      if (!d) return
       let created: Id | null = null
-      docStore().update(def.category === 'doors' ? 'Porta inserida' : 'Janela inserida', (doc) => {
-        created = addOpening(doc, {
-          wallId,
-          componentId: def.id,
-          offset: d.offset,
-          width: d.width,
-          height: def.defaults.height,
-          sillHeight: def.defaults.sillHeight,
-          flipSide: d.flipSide,
-          flipHinge: d.flipHinge,
-          params: { ...def.defaults.params },
+
+      if (d.kind === 'item') {
+        const def = getItem(d.componentId)
+        docStore().update(insertLabel(def.category), (doc) => {
+          created = addItem(doc, {
+            componentId: def.id,
+            x: d.x,
+            y: d.y,
+            rotation: d.rotation,
+            width: def.defaults.width,
+            depth: def.defaults.depth,
+            height: def.defaults.height,
+            mirrored: false,
+            params: { ...def.defaults.params },
+          })
         })
-      })
+      } else {
+        if (!d.wallId || !d.valid) return
+        const def = getComponent(d.componentId)
+        const wallId = d.wallId
+        const wallHeight = project().walls[wallId]!.height
+        docStore().update(insertLabel(def.category), (doc) => {
+          created = addOpening(doc, {
+            wallId,
+            componentId: def.id,
+            offset: d.offset,
+            width: d.width,
+            // Painéis de cobogó sobem do peitoril até o topo da parede em que entram.
+            height: def.fullHeight ? Math.max(def.limits.minHeight, wallHeight - def.defaults.sillHeight) : def.defaults.height,
+            sillHeight: def.defaults.sillHeight,
+            flipSide: d.flipSide,
+            flipHinge: d.flipHinge,
+            params: { ...def.defaults.params },
+          })
+        })
+      }
       if (created) editor().setSelection([created])
       ui().set({ draft: compute(e) })
     },
@@ -121,8 +183,14 @@ export function createPlaceTool(): Tool {
         editor().setTool('select')
         return true
       }
-      if (e.key.toLowerCase() === 'f') {
+      const isItem = getDef(editor().placing ?? '')?.kind === 'item'
+      if (!isItem && e.key.toLowerCase() === 'f') {
         flipHinge = !flipHinge
+        if (last) ui().set({ draft: compute(last) })
+        return true
+      }
+      if (isItem && e.key.toLowerCase() === 'r') {
+        itemRotation = normalizeAngle(itemRotation + (e.shift ? -90 : 90))
         if (last) ui().set({ draft: compute(last) })
         return true
       }
@@ -131,6 +199,7 @@ export function createPlaceTool(): Tool {
 
     onDeactivate() {
       flipHinge = false
+      itemRotation = 0
       last = null
       ui().set({ draft: null })
     },

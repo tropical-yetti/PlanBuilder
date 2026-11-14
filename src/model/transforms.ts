@@ -7,7 +7,8 @@ import { boundsOf, type Rect } from './geometry'
 import { addOpening, fitOpeningsToWalls, isOpeningValid, offsetRange } from './openings'
 import { newId } from './project'
 import { classify } from './selection'
-import type { Dimension, Id, Opening, Point, Project, TextNote } from './types'
+import { itemCorners, normalizeAngle, resizeItem } from './items'
+import type { Dimension, Id, Item, Opening, Point, Project, TextNote } from './types'
 import { connectMovedNodes, drawWallSegment, findWallAt, nodePos, nodesOfWalls, openingCenter, setNodePositions, wallEnds, wallLength } from './walls'
 
 // ---------------------------------------------------------------------------------------------
@@ -20,6 +21,7 @@ export function selectionPoints(p: Project, ids: Id[]): Point[] {
   for (const w of c.walls) pts.push(...wallEnds(p, w))
   for (const o of c.openings) if (p.walls[o.wallId]) pts.push(openingCenter(p, o))
   for (const t of c.texts) pts.push(...textCorners(t))
+  for (const it of c.items) pts.push(...itemCorners(it))
   for (const d of c.dimensions) pts.push(d.p1, d.p2)
   return pts
 }
@@ -31,8 +33,14 @@ export const selectionBounds = (p: Project, ids: Id[]): Rect | null => boundsOf(
 
 type PointMap = (q: Point) => Point
 
-/** Aplica uma transformação rígida às paredes (pelos nós), textos e cotas selecionados. */
-function mapSelection(p: Project, ids: Id[], f: PointMap, extra: { rotateDeg?: number; mirrored?: boolean; settle?: boolean } = {}): void {
+/** Aplica uma transformação rígida às paredes (pelos nós), móveis, textos e cotas selecionados. */
+function mapSelection(
+  p: Project,
+  ids: Id[],
+  f: PointMap,
+  extra: { rotateDeg?: number; mirror?: 'horizontal' | 'vertical'; settle?: boolean } = {},
+): void {
+  const mirrored = !!extra.mirror
   const c = classify(p, ids)
   const wallIds = c.walls.filter((w) => !w.locked).map((w) => w.id)
   const nodeIds = nodesOfWalls(p, wallIds)
@@ -52,9 +60,20 @@ function mapSelection(p: Project, ids: Id[], f: PointMap, extra: { rotateDeg?: n
     d.p1 = f(d.p1)
     d.p2 = f(d.p2)
     // No espelho, o lado da linha de cota inverte junto.
-    if (extra.mirrored) d.offset = -d.offset
+    if (mirrored) d.offset = -d.offset
   }
-  if (extra.mirrored) {
+  for (const it of c.items) {
+    if (it.locked) continue
+    const q = f(it)
+    it.x = Math.round(q.x * 100) / 100
+    it.y = Math.round(q.y * 100) / 100
+    if (extra.rotateDeg) it.rotation = normalizeAngle(it.rotation + extra.rotateDeg)
+    // Espelhar um móvel girado: o ângulo reflete e o desenho inverte da esquerda para a direita.
+    if (extra.mirror === 'horizontal') it.rotation = normalizeAngle(-it.rotation)
+    if (extra.mirror === 'vertical') it.rotation = normalizeAngle(180 - it.rotation)
+    if (mirrored) it.mirrored = !it.mirrored
+  }
+  if (mirrored) {
     // Portas e janelas das paredes espelhadas passam a abrir para o lado espelhado.
     for (const o of Object.values(p.openings)) {
       if (wallIds.includes(o.wallId)) o.flipSide = !o.flipSide
@@ -109,7 +128,7 @@ export function mirrorSelection(p: Project, ids: Id[], axis: 'horizontal' | 'ver
   const c = selectionCenter(p, ids)
   if (!c) return
   const f: PointMap = axis === 'horizontal' ? (q) => ({ x: 2 * c.x - q.x, y: q.y }) : (q) => ({ x: q.x, y: 2 * c.y - q.y })
-  mapSelection(p, ids, f, { mirrored: true })
+  mapSelection(p, ids, f, { mirror: axis })
 }
 
 /** Redimensiona a seleção pelo fator dado, a partir do centro (ex.: corrigir um desenho fora de escala). */
@@ -167,7 +186,7 @@ export function selectionUnits(p: Project, ids: Id[]): Unit[] {
     const b = selectionBounds(p, group)
     if (b) units.push({ ids: group, bounds: b })
   }
-  for (const item of [...c.texts, ...c.dimensions]) {
+  for (const item of [...c.items, ...c.texts, ...c.dimensions]) {
     if (item.locked) continue
     const b = selectionBounds(p, [item.id])
     if (b) units.push({ ids: [item.id], bounds: b })
@@ -223,6 +242,8 @@ export interface Clip {
   /** Aberturas pelo centro no mundo; ao colar, cada uma procura a parede que passa por ali. */
   openings: (OpeningData & { center: Point; sourceWallId: Id; sourceOffset: number; alone: boolean })[]
   texts: Omit<TextNote, 'id' | 'locked'>[]
+  /** Ausente em conteúdo copiado por versões anteriores do app. */
+  items?: Omit<Item, 'id' | 'locked'>[]
   dimensions: Omit<Dimension, 'id' | 'locked'>[]
 }
 
@@ -255,6 +276,7 @@ export function copySelection(p: Project, ids: Id[]): Clip | null {
       alone,
     })),
     texts: c.texts.map(({ x, y, text, size, rotation }) => ({ x, y, text, size, rotation })),
+    items: c.items.map(({ id: _id, locked: _locked, ...rest }) => ({ ...rest, params: { ...rest.params } })),
     dimensions: c.dimensions.map(({ p1, p2, offset }) => ({ p1: { ...p1 }, p2: { ...p2 }, offset })),
   }
 }
@@ -275,6 +297,7 @@ export function clipBounds(clip: Clip): Rect | null {
     ...clip.walls.flatMap((w) => [w.a, w.b]),
     ...clip.openings.map((o) => o.center),
     ...clip.texts.map((t) => ({ x: t.x, y: t.y })),
+    ...(clip.items ?? []).flatMap((it) => itemCorners(it)),
     ...clip.dimensions.flatMap((d) => [d.p1, d.p2]),
   ])
 }
@@ -334,6 +357,12 @@ export function pasteClip(p: Project, clip: Clip, delta: Point): Id[] {
     p.texts[id] = { ...t, id, x: q.x, y: q.y }
     created.push(id)
   }
+  for (const it of clip.items ?? []) {
+    const id = newId()
+    const q = move(it)
+    p.items[id] = { ...it, params: { ...it.params }, id, x: q.x, y: q.y }
+    created.push(id)
+  }
   for (const d of clip.dimensions) {
     const id = newId()
     p.dimensions[id] = { id, p1: move(d.p1), p2: move(d.p2), offset: d.offset }
@@ -349,6 +378,7 @@ export interface StyleClip {
   wall?: { thickness: number; height: number }
   opening?: { componentId: string; width: number; height: number; sillHeight: number; params: Record<string, unknown> }
   text?: { size: number; rotation: number }
+  item?: { componentId: string; width: number; depth: number; height: number; params: Record<string, unknown> }
 }
 
 /** Guarda as medidas do primeiro objeto de cada tipo na seleção. */
@@ -358,10 +388,12 @@ export function copyStyle(p: Project, ids: Id[]): StyleClip | null {
   const w = c.walls[0]
   const o = c.openings[0]
   const t = c.texts[0]
+  const it = c.items[0]
+  if (it) style.item = { componentId: it.componentId, width: it.width, depth: it.depth, height: it.height, params: { ...it.params } }
   if (w) style.wall = { thickness: w.thickness, height: w.height }
   if (o) style.opening = { componentId: o.componentId, width: o.width, height: o.height, sillHeight: o.sillHeight, params: { ...o.params } }
   if (t) style.text = { size: t.size, rotation: t.rotation }
-  return w || o || t ? style : null
+  return w || o || t || it ? style : null
 }
 
 /** Aplica as medidas guardadas aos objetos do mesmo tipo. Aberturas só mudam de largura se couber. */
@@ -381,6 +413,15 @@ export function pasteStyle(p: Project, ids: Id[], style: StyleClip): void {
       o.height = style.opening.height
       o.sillHeight = style.opening.sillHeight
       if (o.componentId === style.opening.componentId) o.params = { ...style.opening.params }
+    }
+  }
+  if (style.item) {
+    // Medidas de um móvel só passam para móveis do mesmo tipo (um sofá não vira do tamanho de uma cama).
+    for (const it of c.items) {
+      if (it.locked || it.componentId !== style.item.componentId) continue
+      resizeItem(it, { width: style.item.width, depth: style.item.depth }, true)
+      it.height = style.item.height
+      it.params = { ...style.item.params }
     }
   }
   if (style.text) {

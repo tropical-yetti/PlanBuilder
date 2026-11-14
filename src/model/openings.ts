@@ -136,3 +136,16 @@ export function fitOpeningsToWalls(p: Project, wallIds?: Id[]): void {
     }
   }
 }
+
+/** Estica a abertura para ocupar a parede inteira (menos a margem das pontas). Falha se houver outra abertura na parede. */
+export function fillWall(p: Project, id: Id): boolean {
+  const o = p.openings[id]
+  const w = o && p.walls[o.wallId]
+  if (!o || !w) return false
+  const L = wallLength(p, w)
+  const width = Math.floor((L - 2 * END_MARGIN) * 10) / 10
+  if (width <= 0 || !isOpeningValid(p, w.id, L / 2, width, id)) return false
+  o.width = width
+  o.offset = Math.round((L / 2) * 100) / 100
+  return true
+}

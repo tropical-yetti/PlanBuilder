@@ -19,7 +19,7 @@ const doc = () => useProjectStore.getState()
 const editor = () => useEditorStore.getState()
 const selection = (): Id[] => {
   const p = doc().project
-  return editor().selection.filter((id) => p.walls[id] || p.openings[id] || p.texts[id] || p.dimensions[id])
+  return editor().selection.filter((id) => p.walls[id] || p.openings[id] || p.items[id] || p.texts[id] || p.dimensions[id])
 }
 const keyOf = (ids: Id[]) => [...ids].sort().join('|')
 

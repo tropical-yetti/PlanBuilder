@@ -14,7 +14,7 @@ test.describe('primeira abertura', () => {
     for (const room of ['Sala', 'Quarto', 'Cozinha', 'Banheiro']) await expect(page.getByLabel(`Nome de ${room}`)).toHaveValue(room)
 
     const p = await savedProject(page)
-    expect(count(p?.openings)).toBe(8)
+    expect(count(p?.openings)).toBe(9) // 4 portas, 4 janelas e 1 cobogó
 
     await page.reload()
     await expect(page.locator('.project-name')).toHaveValue('Casa de exemplo')

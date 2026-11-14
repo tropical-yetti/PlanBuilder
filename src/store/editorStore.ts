@@ -17,6 +17,8 @@ export interface Layers {
   dimensions: boolean
   texts: boolean
   openings: boolean
+  /** Móveis. */
+  items: boolean
   /** Nomes e áreas dos cômodos. */
   roomLabels: boolean
 }
@@ -26,11 +28,12 @@ export const LAYER_LABELS: Record<keyof Layers, string> = {
   autoDimensions: 'Medidas das paredes',
   dimensions: 'Cotas',
   texts: 'Textos',
-  openings: 'Portas e janelas',
+  openings: 'Portas, janelas e cobogós',
+  items: 'Móveis',
   roomLabels: 'Nomes e áreas dos cômodos',
 }
 
-export const DEFAULT_LAYERS: Layers = { grid: true, autoDimensions: true, dimensions: true, texts: true, openings: true, roomLabels: true }
+export const DEFAULT_LAYERS: Layers = { grid: true, autoDimensions: true, dimensions: true, texts: true, openings: true, items: true, roomLabels: true }
 
 /** Objeto (ou lugar) em que o menu de contexto foi aberto. */
 export interface ContextTarget {

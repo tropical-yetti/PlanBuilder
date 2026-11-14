@@ -2,6 +2,7 @@ import type Konva from 'konva'
 import { Layer, Stage } from 'react-konva'
 import { AnnotationLayer } from '../editor2d/layers/AnnotationLayer'
 import { GridLayer } from '../editor2d/layers/GridLayer'
+import { ItemLayer } from '../editor2d/layers/ItemLayer'
 import { OpeningLayer } from '../editor2d/layers/OpeningLayer'
 import { OverlayLayer } from '../editor2d/layers/OverlayLayer'
 import { RoomLayer } from '../editor2d/layers/RoomLayer'
@@ -28,7 +29,9 @@ export function ExportDrawing({ project, layout, options, onStage }: { project: 
       </Layer>
       <WallLayer polygons={polygons} selected={NONE} hovered={null} hoverColor={C.wallFill} locked={NONE} />
       <Layer listening={false}>
+        <ItemLayer items={Object.values(project.items)} pxPerCm={k} colorOf={() => C.furniture} />
         <OpeningLayer shapes={openingShapes(project, () => C.opening)} pxPerCm={k} gapColor="#ffffff" />
+        <RoomLayer part="labels" rooms={quantities(project).rooms} pxPerCm={k} highlighted={null} editing={null} showLabels={options.roomLabels} />
         <AnnotationLayer project={project} pxPerCm={k} selected={NONE} hovered={null} hoverColor={C.annotation} showDimensions showTexts editingText={null} />
       </Layer>
       <OverlayLayer

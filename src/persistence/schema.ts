@@ -144,6 +144,30 @@ function sanitize(raw: Raw): { project: Project; warnings: string[] } {
   }
   dropped(bad, 'anotação inválida foi descartada', 'anotações inválidas foram descartadas')
 
+  bad = 0
+  for (const it of records(raw.items)) {
+    const valid =
+      str(it.id) && str(it.componentId) && num(it.x) && num(it.y) && num(it.width) && it.width > 0 && num(it.depth) && it.depth > 0 && num(it.height) && it.height > 0
+    if (!valid) {
+      bad += 1
+      continue
+    }
+    project.items[it.id as string] = {
+      id: it.id as string,
+      componentId: it.componentId as string,
+      x: it.x as number,
+      y: it.y as number,
+      rotation: num(it.rotation) ? ((it.rotation % 360) + 360) % 360 : 0,
+      width: it.width as number,
+      depth: it.depth as number,
+      height: it.height as number,
+      mirrored: it.mirrored === true,
+      params: isObject(it.params) ? { ...it.params } : {},
+      ...(it.locked === true ? { locked: true } : {}),
+    }
+  }
+  dropped(bad, 'móvel inválido foi descartado', 'móveis inválidos foram descartados')
+
   for (const l of records(raw.roomLabels)) {
     if (str(l.id) && num(l.x) && num(l.y) && str(l.name)) project.roomLabels[l.id] = { id: l.id, x: l.x, y: l.y, name: l.name }
   }

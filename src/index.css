@@ -1188,3 +1188,20 @@ kbd {
 .crash pre {
   white-space: pre-wrap;
 }
+
+.lib-group {
+  margin: 4px 12px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.preset-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: -4px;
+}

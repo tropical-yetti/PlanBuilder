@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useInteractionStore } from '../editor2d/interactionStore'
-import { getComponent } from '../library/registry'
+import { getComponent, getItem } from '../library/registry'
 import { quantities, type Room } from '../model/quantities'
 import { ROOM_NAME_SUGGESTIONS, renameRoom } from '../model/roomNames'
 import { formatArea, formatMeters } from '../model/units'
@@ -82,6 +82,7 @@ export function AreasPanel() {
 
   const doors = q.openingCounts.filter((c) => getComponent(c.componentId).category === 'doors')
   const windows = q.openingCounts.filter((c) => getComponent(c.componentId).category === 'windows')
+  const cobogos = q.openingCounts.filter((c) => getComponent(c.componentId).category === 'cobogo')
   const sum = (list: typeof doors) => list.reduce((s, c) => s + c.count, 0)
 
   return (
@@ -133,7 +134,7 @@ export function AreasPanel() {
 
       {q.openingCounts.length > 0 && (
         <section>
-          <h3 className="props-subtitle">Portas e janelas</h3>
+          <h3 className="props-subtitle">Portas, janelas e cobogós</h3>
           {doors.length > 0 && <Row strong label="Portas" value={String(sum(doors))} />}
           {doors.map((c) => (
             <Row key={c.componentId} label={getComponent(c.componentId).name} value={String(c.count)} />
@@ -141,6 +142,25 @@ export function AreasPanel() {
           {windows.length > 0 && <Row strong label="Janelas" value={String(sum(windows))} />}
           {windows.map((c) => (
             <Row key={c.componentId} label={getComponent(c.componentId).name} value={String(c.count)} />
+          ))}
+          {cobogos.length > 0 && (
+            <>
+              <Row strong label="Cobogó" value={formatArea(q.cobogo.area)} title="Área de todos os cobogós (descontada da superfície de paredes)" />
+              <Row
+                label="Peças (estimativa)"
+                value={`≈ ${q.cobogo.pieces}`}
+                title="Peças cortadas nas bordas contam como inteiras. Considere uma sobra para quebras."
+              />
+            </>
+          )}
+        </section>
+      )}
+
+      {q.itemCounts.length > 0 && (
+        <section>
+          <h3 className="props-subtitle">Móveis</h3>
+          {q.itemCounts.map((c) => (
+            <Row key={c.componentId} label={getItem(c.componentId).name} value={String(c.count)} />
           ))}
         </section>
       )}

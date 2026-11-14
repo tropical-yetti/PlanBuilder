@@ -1,21 +1,31 @@
 /**
  * Contrato de um componente da biblioteca (docs/PLANO.md, seção 5).
- * Para adicionar um componente: crie um arquivo em `components/<categoria>/` exportando um
- * ComponentDef e inclua-o na lista de `registry.ts`. O editor, a miniatura da biblioteca e o
- * painel de propriedades são gerados a partir desta definição.
+ * Há dois tipos de componente:
+ * - OpeningDef ("opening"): vai na parede e abre um vão (portas, janelas, cobogós);
+ * - ItemDef ("item"): objeto solto no cômodo (móveis).
+ * Para adicionar um componente: crie um arquivo em `components/<categoria>/` exportando a definição
+ * e inclua-o na lista de `registry.ts`. O editor, a miniatura da biblioteca, o painel de
+ * propriedades e a vista 3D são gerados a partir dela.
  */
 import type { CategoryId } from './categories'
 
+/** Preenchimentos do símbolo 2D. */
+export type PrimFill = 'leaf' | 'glass' | 'solid' | 'soft' | 'wood' | 'concrete'
+
 /**
- * Primitivas do símbolo 2D, em centímetros, no sistema local da abertura:
- * origem no centro do vão, x ao longo da parede, y perpendicular (positivo = lado para onde abre).
- * O editor cuida de posição, rotação e inversões; o componente só descreve o desenho "padrão".
+ * Primitivas do símbolo 2D, em centímetros, no sistema local do componente:
+ * - aberturas: origem no centro do vão, x ao longo da parede, y perpendicular (positivo = lado para onde abre);
+ * - móveis: origem no centro, x na largura, y na profundidade (positivo = frente; o fundo fica em y negativo).
+ * O editor cuida de posição, rotação e espelhamento; o componente só descreve o desenho "padrão".
  */
 export type Prim =
-  | { t: 'line'; pts: number[]; dash?: boolean; thin?: boolean }
+  /** Linha poligonal; com `closed`, vira um polígono (e pode ter preenchimento). */
+  | { t: 'line'; pts: number[]; dash?: boolean; thin?: boolean; closed?: boolean; fill?: PrimFill }
   /** Arco de `a0` a `a1` (radianos; ângulo crescente = sentido de x para y). */
   | { t: 'arc'; cx: number; cy: number; r: number; a0: number; a1: number; dash?: boolean; thin?: boolean }
-  | { t: 'rect'; x: number; y: number; w: number; h: number; fill?: 'leaf' | 'glass'; thin?: boolean }
+  /** Retângulo; `r` arredonda os cantos. */
+  | { t: 'rect'; x: number; y: number; w: number; h: number; fill?: PrimFill; thin?: boolean; r?: number }
+  | { t: 'circle'; cx: number; cy: number; r: number; fill?: PrimFill; thin?: boolean }
 
 export interface SymbolInput {
   /** Largura do vão. */
@@ -24,6 +34,8 @@ export interface SymbolInput {
   thickness: number
   params: Record<string, unknown>
 }
+
+export type Material = 'frame' | 'leaf' | 'glass' | 'concrete' | 'wood' | 'fabric' | 'cushion' | 'sheet' | 'pillow' | 'metal'
 
 /**
  * Peça do modelo 3D: uma caixa, em centímetros, no sistema local da abertura:
@@ -39,7 +51,9 @@ export interface Box3 {
   w: number
   h: number
   d: number
-  mat: 'frame' | 'leaf' | 'glass'
+  mat: Material
+  /** Cilindro (mesas redondas): `w` é o diâmetro e `d` é ignorado. */
+  shape?: 'box' | 'cylinder'
   /** Folha entreaberta: gira em torno do eixo vertical que passa por `pivot`, `angle` graus para o lado de abertura. */
   pivot?: { x: number; z: number }
   angle?: number
@@ -55,11 +69,11 @@ export type ParamField =
   | { key: string; label: string; type: 'boolean' }
   | { key: string; label: string; type: 'number'; min: number; max: number; suffix?: string }
 
-export interface ComponentDef {
+export interface OpeningDef {
   /** Identificador estável, salvo nos projetos. Ex.: "door.swing-single". */
   id: string
   category: CategoryId
-  /** "opening" = vai na parede e abre um vão. ("item", solto no ambiente, chega depois do MVP.) */
+  /** Vai na parede e abre um vão. */
   kind: 'opening'
   name: string
   /** Palavras para a busca, além do nome. */
@@ -80,4 +94,55 @@ export interface ComponentDef {
   symbol(input: SymbolInput): Prim[]
   /** Modelo 3D simples (batente, folhas, vidro). */
   model(input: ModelInput): Box3[]
+  /** Ao inserir, a altura ocupa a parede inteira, do peitoril até o topo (painéis de cobogó). */
+  fullHeight?: boolean
+  /** Oferece "Ocupar a parede inteira" no painel de propriedades. */
+  fillsWall?: boolean
+  /** Peça de revestimento que preenche o vão (cobogó): lado da peça em cm, para estimar a quantidade. */
+  pieceSize?(params: Record<string, unknown>): number
 }
+
+/** Antigo nome do contrato de aberturas. */
+export type ComponentDef = OpeningDef
+
+export interface ItemInput {
+  /** Largura (x) e profundidade (y no símbolo, z no modelo 3D). Mesas redondas: ambas = diâmetro. */
+  width: number
+  depth: number
+  params: Record<string, unknown>
+}
+
+export interface ItemModelInput extends ItemInput {
+  height: number
+}
+
+/** Tamanho padrão oferecido como atalho no painel de propriedades. */
+export interface ItemPreset {
+  label: string
+  width: number
+  depth: number
+}
+
+export interface ItemDef {
+  id: string
+  category: CategoryId
+  /** Subgrupo dentro da categoria (ex.: "Camas"), usado para organizar a biblioteca. */
+  group: string
+  /** Objeto solto no cômodo. */
+  kind: 'item'
+  name: string
+  tags: string[]
+  defaults: { width: number; depth: number; height: number; params: Record<string, unknown> }
+  presets?: ItemPreset[]
+  limits: { minWidth: number; maxWidth: number; minDepth: number; maxDepth: number; minHeight: number; maxHeight: number }
+  /** Redondo: largura e profundidade são o mesmo diâmetro. */
+  round?: boolean
+  /** Ao inserir ou arrastar perto de uma parede, o fundo encosta nela (sofás, camas, poltronas). */
+  againstWall: boolean
+  paramsSchema?: ParamField[]
+  symbol(input: ItemInput): Prim[]
+  /** Modelo 3D: x na largura, y para cima a partir do piso, z na profundidade (positivo = frente). */
+  model(input: ItemModelInput): Box3[]
+}
+
+export type LibraryDef = OpeningDef | ItemDef

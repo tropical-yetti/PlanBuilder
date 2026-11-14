@@ -2,12 +2,12 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { getComponent } from '../library/registry'
-import type { Box3 } from '../library/types'
+import { getComponent, getItem } from '../library/registry'
+import type { Box3, Material } from '../library/types'
 import { angleOf, boundsOf, normalize, sub } from '../model/geometry'
 import { quantities, type Room } from '../model/quantities'
 import { wallPolygons } from '../model/wallGeometry'
-import type { Opening, Project } from '../model/types'
+import type { Item, Opening, Project } from '../model/types'
 import { useEditorStore } from '../store/editorStore'
 import { useProjectStore } from '../store/projectStore'
 import { buildWallPieces, type WallPiece } from './buildWalls'
@@ -25,6 +25,19 @@ const COLORS = {
   frame: '#f1f5f9',
   leaf: '#c8a27a',
   glass: '#9cc9f5',
+}
+
+/** Cores dos materiais das peças 3D de portas, janelas, cobogós e móveis. */
+const MATERIALS: Record<Exclude<Material, 'glass'>, string> = {
+  frame: '#f1f5f9',
+  leaf: '#c8a27a',
+  concrete: '#e9e3d8',
+  wood: '#b98d62',
+  fabric: '#8a9bb0',
+  cushion: '#a7b6c8',
+  sheet: '#f8f6f2',
+  pillow: '#ffffff',
+  metal: '#6b7280',
 }
 
 /** Contorno em planta → forma do three. O y da planta vira o z da cena (por isso o sinal trocado). */
@@ -71,7 +84,7 @@ function BoxMesh({ b }: { b: Box3 }) {
     b.mat === 'glass' ? (
       <meshStandardMaterial color={COLORS.glass} transparent opacity={0.4} roughness={0.1} side={THREE.DoubleSide} />
     ) : (
-      <meshStandardMaterial color={b.mat === 'leaf' ? COLORS.leaf : COLORS.frame} roughness={0.8} side={THREE.DoubleSide} />
+      <meshStandardMaterial color={MATERIALS[b.mat]} roughness={b.mat === 'metal' ? 0.5 : 0.85} side={THREE.DoubleSide} />
     )
   const px = b.pivot?.x ?? 0
   const pz = b.pivot?.z ?? 0
@@ -79,7 +92,7 @@ function BoxMesh({ b }: { b: Box3 }) {
     // Folhas entreabertas giram em torno da dobradiça (o ângulo positivo abre para o lado +z).
     <group position={[px, 0, pz]} rotation={[0, (-(b.angle ?? 0) * Math.PI) / 180, 0]}>
       <mesh position={[b.x - px, b.y, b.z - pz]}>
-        <boxGeometry args={[b.w, b.h, b.d]} />
+        {b.shape === 'cylinder' ? <cylinderGeometry args={[b.w / 2, b.w / 2, b.h, 40]} /> : <boxGeometry args={[b.w, b.h, b.d]} />}
         {material}
       </mesh>
     </group>
@@ -102,6 +115,21 @@ function OpeningModel({ project, o }: { project: Project; o: Opening }) {
       rotation={[0, -angleOf(dir), 0]}
       scale={[o.flipHinge ? -1 : 1, 1, o.flipSide ? -1 : 1]}
     >
+      {boxes.map((box, i) => (
+        <BoxMesh key={i} b={box} />
+      ))}
+    </group>
+  )
+}
+
+function ItemModel({ item }: { item: Item }) {
+  const boxes = useMemo(
+    () => getItem(item.componentId).model({ width: item.width, depth: item.depth, height: item.height, params: item.params }),
+    [item.componentId, item.width, item.depth, item.height, item.params],
+  )
+  // Mesmo sistema das aberturas: x local na largura, z local na profundidade (a frente do móvel).
+  return (
+    <group position={[item.x, 0, item.y]} rotation={[0, (-item.rotation * Math.PI) / 180, 0]} scale={[item.mirrored ? -1 : 1, 1, 1]}>
       {boxes.map((box, i) => (
         <BoxMesh key={i} b={box} />
       ))}
@@ -195,6 +223,9 @@ function World({ project, selection }: { project: Project; selection: string[] }
       ))}
       {Object.values(project.openings).map((o) => (
         <OpeningModel key={o.id} project={project} o={o} />
+      ))}
+      {Object.values(project.items).map((it) => (
+        <ItemModel key={it.id} item={it} />
       ))}
     </group>
   )

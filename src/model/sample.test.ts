@@ -14,7 +14,20 @@ describe('projeto de exemplo', () => {
     const ids = Object.values(p.openings).map((o) => o.componentId.split('.')[0])
     expect(ids.filter((k) => k === 'door')).toHaveLength(4)
     expect(ids.filter((k) => k === 'window')).toHaveLength(4)
+    expect(ids.filter((k) => k === 'cobogo')).toHaveLength(1)
     expect(q.totalArea).toBeCloseTo(815 * 615)
+  })
+
+  it('tem móveis e um cobogó', () => {
+    expect(Object.values(p.items).map((it) => it.componentId).sort()).toEqual([
+      'furniture.armchair',
+      'furniture.bed-double',
+      'furniture.sofa-3',
+      'furniture.table-round',
+    ])
+    // o sofá encostou na parede da esquerda, de frente para a sala
+    expect(Object.values(p.items).find((it) => it.componentId === 'furniture.sofa-3')).toMatchObject({ x: 52.5, rotation: 270 })
+    expect(quantities(p).cobogo.area).toBe(200 * 50)
   })
 
   it('todas as aberturas estão em posição válida', () => {
