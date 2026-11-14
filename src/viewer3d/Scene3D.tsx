@@ -38,6 +38,9 @@ const MATERIALS: Record<Exclude<Material, 'glass'>, string> = {
   sheet: '#f8f6f2',
   pillow: '#ffffff',
   metal: '#6b7280',
+  steel: '#c9ced4',
+  enamel: '#f5f6f7',
+  dark: '#2b2f36',
 }
 
 /** Contorno em planta → forma do three. O y da planta vira o z da cena (por isso o sinal trocado). */
@@ -244,7 +247,15 @@ export default function Scene3D() {
   const empty = Object.keys(project.walls).length === 0
 
   return (
-    <div className="scene3d" data-testid="scene3d" data-ready={ready}>
+    <div
+      className="scene3d"
+      data-testid="scene3d"
+      data-ready={ready}
+      // Arrastar a câmera para fora da vista 3D não deve selecionar o texto da página.
+      onMouseDown={(e) => {
+        if (e.target instanceof HTMLCanvasElement) e.preventDefault()
+      }}
+    >
       {/* `flat`: sem ajuste de tom, as cores saem como definidas (paredes realmente claras). */}
       <Canvas flat frameloop="demand" camera={{ fov: 45, near: 0.1, far: 2000 }} gl={{ antialias: true }} dpr={[1, 2]}>
         <color attach="background" args={[COLORS.background]} />

@@ -1,4 +1,6 @@
 import { dimensionGeometry, textCorners } from '../model/annotations'
+import { getItem } from '../library/registry'
+import { primBounds } from '../library/prims'
 import { boundsOf, type Rect } from '../model/geometry'
 import { itemCorners } from '../model/items'
 import { wallPolygons } from '../model/wallGeometry'
@@ -34,10 +36,22 @@ export function contentBounds(p: Project): Rect | null {
     pts.push({ x: c.x - o.width, y: c.y - o.width }, { x: c.x + o.width, y: c.y + o.width })
   }
   for (const t of Object.values(p.texts)) pts.push(...textCorners(t))
-  // Mesas com cadeiras ocupam um pouco além do tampo.
+  // Móveis pelo desenho completo: cadeiras das mesas e o giro das portas da geladeira passam do corpo.
   for (const it of Object.values(p.items)) {
-    const pad = it.componentId.startsWith('furniture.table') && it.params.chairs !== false ? 70 : 0
-    pts.push(...itemCorners({ ...it, width: it.width + pad, depth: it.depth + pad }))
+    pts.push(...itemCorners(it))
+    const b = primBounds(getItem(it.componentId).symbol({ width: it.width, depth: it.depth, params: it.params }))
+    if (!b) continue
+    const rad = (it.rotation * Math.PI) / 180
+    const m = it.mirrored ? -1 : 1
+    for (const [lx, ly] of [
+      [b.minX, b.minY],
+      [b.maxX, b.minY],
+      [b.maxX, b.maxY],
+      [b.minX, b.maxY],
+    ] as const) {
+      const x = lx * m
+      pts.push({ x: it.x + x * Math.cos(rad) - ly * Math.sin(rad), y: it.y + x * Math.sin(rad) + ly * Math.cos(rad) })
+    }
   }
   for (const d of Object.values(p.dimensions)) {
     const g = dimensionGeometry(d)

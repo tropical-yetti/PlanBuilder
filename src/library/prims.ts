@@ -9,6 +9,8 @@ export const FILL_COLORS: Record<PrimFill, string> = {
   soft: '#eceff3',
   wood: '#f1e6d6',
   concrete: '#e7e2d8',
+  steel: '#e5e8ec',
+  dark: '#4b5563',
 }
 
 export interface PrimBounds {

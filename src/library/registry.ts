@@ -1,6 +1,10 @@
 import { CATEGORIES, type CategoryId } from './categories'
+import { fridgeDuplex, fridgeInverse, fridgeSide } from './components/appliances/fridges'
+import { stove4, stove5, stove6 } from './components/appliances/stoves'
+import { washerFront, washerTop } from './components/appliances/washers'
 import { cobogoBand } from './components/cobogo/band'
 import { cobogoPanel } from './components/cobogo/panel'
+import { doorFolding } from './components/doors/folding'
 import { doorOpenPassage } from './components/doors/open-passage'
 import { doorSliding } from './components/doors/sliding'
 import { doorSwingDouble } from './components/doors/swing-double'
@@ -19,6 +23,7 @@ export const COMPONENTS: LibraryDef[] = [
   doorSwingSingle,
   doorSwingDouble,
   doorSliding,
+  doorFolding,
   doorOpenPassage,
   windowSliding,
   windowCasement,
@@ -33,6 +38,14 @@ export const COMPONENTS: LibraryDef[] = [
   tableRect,
   tableRound,
   ...BEDS,
+  stove4,
+  stove5,
+  stove6,
+  fridgeDuplex,
+  fridgeInverse,
+  fridgeSide,
+  washerTop,
+  washerFront,
 ]
 
 const byId = new Map<string, LibraryDef>(COMPONENTS.map((c) => [c.id, c]))
