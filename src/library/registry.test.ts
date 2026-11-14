@@ -66,8 +66,33 @@ describe('biblioteca', () => {
     expect(ids(itemsInGroup('Lavanderia'))).toEqual(['appliance.washer-top', 'appliance.washer-front'])
     expect(size('appliance.washer-top')).toEqual([63, 71, 106]) // BWR12BB / BWF15AB
     expect(size('appliance.washer-front')).toEqual([59.5, 64.4, 84.6]) // BNO11AS
+    expect(ids(itemsInGroup('Lava-louças'))).toEqual(['appliance.dishwasher-8', 'appliance.dishwasher-10', 'appliance.dishwasher-14'])
+    expect(size('appliance.dishwasher-8')).toEqual([51, 65, 63]) // BLF08, compacta
+    expect(size('appliance.dishwasher-10')).toEqual([44.8, 63.7, 84.5]) // BLF10
+    expect(size('appliance.dishwasher-14')).toEqual([59.8, 60, 84.5]) // BLF14
+    // a compacta fica sobre a bancada; as de piso, no chão
+    expect(getItem('appliance.dishwasher-8').defaults.params.elevation).toBe(90)
+    expect(getItem('appliance.dishwasher-14').defaults.params.elevation).toBeUndefined()
     // todos encostam na parede
     for (const c of items.filter((i) => i.category === 'appliances')) expect(c.againstWall, c.id).toBe(true)
+  })
+
+  it('gabinetes de cozinha e lavanderia: grupos separados dos eletrodomésticos', () => {
+    expect(ids(itemsInGroup('Gabinetes de cozinha'))).toEqual(['kitchen.sink-cabinet', 'kitchen.base-cabinet', 'kitchen.wall-cabinet'])
+    expect(ids(itemsInGroup('Gabinetes de lavanderia'))).toEqual(['laundry.tank-cabinet', 'laundry.wall-cabinet', 'laundry.tall-cabinet'])
+    expect(ids(itemsInGroup('Lavanderia'))).toEqual(['appliance.washer-top', 'appliance.washer-front'])
+    // bancada a 90 cm com 60 cm de profundidade; aéreo de 35 cm, 60 cm acima da bancada
+    expect(getItem('kitchen.sink-cabinet').defaults).toMatchObject({ width: 120, depth: 60, height: 90 })
+    expect(getItem('kitchen.wall-cabinet').defaults).toMatchObject({ depth: 35, params: { elevation: 150 } })
+    // cuba dupla: duas cubas e o ralo de cada uma
+    const sink = getItem('kitchen.sink-cabinet')
+    const count = (basins: number) => sink.symbol({ width: 150, depth: 60, params: { basins } }).filter((p) => p.t === 'rect' && p.fill === 'steel').length
+    expect(count(1)).toBe(1)
+    expect(count(2)).toBe(2)
+    // gabinete estreito não comporta cuba dupla
+    expect(sink.symbol({ width: 80, depth: 60, params: { basins: 2 } }).filter((p) => p.t === 'rect' && p.fill === 'steel')).toHaveLength(1)
+    // o armário aéreo é tracejado na planta
+    expect(getItem('kitchen.wall-cabinet').symbol({ width: 80, depth: 35, params: {} }).every((p) => p.t === 'line' && p.dash)).toBe(true)
   })
 
   it('fogões: uma boca por posição, todas dentro do fogão', () => {
@@ -120,8 +145,9 @@ describe('biblioteca', () => {
 
   it('todo móvel é coerente com o contrato', () => {
     for (const c of items) {
-      expect(['furniture', 'appliances'], c.id).toContain(c.category)
-      expect(c.id.startsWith(c.category === 'furniture' ? 'furniture.' : 'appliance.'), c.id).toBe(true)
+      expect(['furniture', 'appliances', 'kitchen'], c.id).toContain(c.category)
+      const prefixes = { furniture: ['furniture.'], appliances: ['appliance.'], kitchen: ['kitchen.', 'laundry.'] }[c.category as 'furniture']
+      expect(prefixes.some((pre) => c.id.startsWith(pre)), c.id).toBe(true)
       const { width, depth, height } = c.defaults
       expect(width >= c.limits.minWidth && width <= c.limits.maxWidth, c.id).toBe(true)
       expect(depth >= c.limits.minDepth && depth <= c.limits.maxDepth, c.id).toBe(true)
@@ -197,7 +223,11 @@ describe('biblioteca', () => {
     expect(ids(searchComponents('geladeira'))).toHaveLength(3)
     expect(ids(searchComponents('fogao 5 bocas'))).toEqual(['appliance.stove-5'])
     expect(ids(searchComponents('lavar roupa'))).toEqual(['appliance.washer-top', 'appliance.washer-front'])
-    expect(ids(searchComponents('eletrodomesticos'))).toHaveLength(8)
+    expect(ids(searchComponents('pia'))).toEqual(['kitchen.sink-cabinet'])
+    expect(ids(searchComponents('eletrodomesticos'))).toHaveLength(11)
+    expect(ids(searchComponents('lava louças'))).toEqual(['appliance.dishwasher-8', 'appliance.dishwasher-10', 'appliance.dishwasher-14'])
+    expect(ids(searchComponents('tanque'))).toEqual(['laundry.tank-cabinet'])
+    expect(ids(searchComponents('aereo'))).toEqual(['kitchen.wall-cabinet', 'laundry.wall-cabinet'])
     expect(ids(searchComponents('janela correr'))).toEqual(['window.sliding'])
     expect(searchComponents('JANELAS')).toHaveLength(4)
     expect(ids(searchComponents('cobogo'))).toEqual(['cobogo.panel', 'cobogo.band'])

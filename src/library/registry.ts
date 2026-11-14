@@ -1,4 +1,5 @@
 import { CATEGORIES, type CategoryId } from './categories'
+import { dishwasher10, dishwasher14, dishwasher8 } from './components/appliances/dishwashers'
 import { fridgeDuplex, fridgeInverse, fridgeSide } from './components/appliances/fridges'
 import { stove4, stove5, stove6 } from './components/appliances/stoves'
 import { washerFront, washerTop } from './components/appliances/washers'
@@ -11,6 +12,7 @@ import { doorSwingDouble } from './components/doors/swing-double'
 import { doorSwingSingle } from './components/doors/swing-single'
 import { BEDS } from './components/furniture/beds'
 import { armchair, sofa2, sofa3 } from './components/furniture/seating'
+import { baseCabinet, kitchenWallCabinet, laundryWallCabinet, sinkCabinet, tallCabinet, tankCabinet } from './components/kitchen/cabinets'
 import { tableRect, tableRound, tableSquare } from './components/furniture/tables'
 import { windowCasement } from './components/windows/casement'
 import { windowFixed } from './components/windows/fixed'
@@ -38,6 +40,12 @@ export const COMPONENTS: LibraryDef[] = [
   tableRect,
   tableRound,
   ...BEDS,
+  sinkCabinet,
+  baseCabinet,
+  kitchenWallCabinet,
+  tankCabinet,
+  laundryWallCabinet,
+  tallCabinet,
   stove4,
   stove5,
   stove6,
@@ -46,6 +54,9 @@ export const COMPONENTS: LibraryDef[] = [
   fridgeSide,
   washerTop,
   washerFront,
+  dishwasher8,
+  dishwasher10,
+  dishwasher14,
 ]
 
 const byId = new Map<string, LibraryDef>(COMPONENTS.map((c) => [c.id, c]))

@@ -20,12 +20,15 @@ describe('projeto de exemplo', () => {
 
   it('tem móveis e um cobogó', () => {
     expect(Object.values(p.items).map((it) => it.componentId).sort()).toEqual([
+      'appliance.dishwasher-14',
       'appliance.fridge-duplex',
       'appliance.stove-4',
       'furniture.armchair',
       'furniture.bed-double',
       'furniture.sofa-3',
       'furniture.table-round',
+      'kitchen.sink-cabinet',
+      'kitchen.wall-cabinet',
     ])
     // o sofá encostou na parede da esquerda, de frente para a sala
     expect(Object.values(p.items).find((it) => it.componentId === 'furniture.sofa-3')).toMatchObject({ x: 52.5, rotation: 270 })

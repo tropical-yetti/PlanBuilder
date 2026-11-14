@@ -1206,3 +1206,11 @@ kbd {
   margin-top: -4px;
 }
 .scene3d { user-select: none; }
+
+.preset-label {
+  width: 100%;
+  margin-bottom: 2px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: left;
+}
