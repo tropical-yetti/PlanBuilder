@@ -79,7 +79,23 @@ describe('biblioteca', () => {
 
   it('gabinetes de cozinha e lavanderia: grupos separados dos eletrodomésticos', () => {
     expect(ids(itemsInGroup('Gabinetes de cozinha'))).toEqual(['kitchen.sink-cabinet', 'kitchen.base-cabinet', 'kitchen.wall-cabinet'])
-    expect(ids(itemsInGroup('Gabinetes de lavanderia'))).toEqual(['laundry.tank-cabinet', 'laundry.wall-cabinet', 'laundry.tall-cabinet'])
+    expect(ids(itemsInGroup('Gabinetes de lavanderia'))).toEqual([
+      'laundry.tank-cabinet',
+      'laundry.tank-suspended',
+      'laundry.base-cabinet',
+      'laundry.washer-niche',
+      'laundry.wall-cabinet',
+      'laundry.tall-cabinet',
+    ])
+    // o nicho comporta a lava e seca (59,5 × 64,4 × 84,6) sob o tampo de 90 cm
+    const niche = getItem('laundry.washer-niche').defaults
+    const washer = getItem('appliance.washer-front').defaults
+    expect(niche.width).toBeGreaterThan(washer.width)
+    expect(niche.depth).toBeGreaterThanOrEqual(washer.depth)
+    expect(niche.height - 4).toBeGreaterThan(washer.height)
+    // o tanque suspenso fica com a borda a 90 cm do piso
+    const hung = getItem('laundry.tank-suspended').defaults
+    expect((hung.params.elevation as number) + hung.height).toBe(90)
     expect(ids(itemsInGroup('Lavanderia'))).toEqual(['appliance.washer-top', 'appliance.washer-front'])
     // bancada a 90 cm com 60 cm de profundidade; aéreo de 35 cm, 60 cm acima da bancada
     expect(getItem('kitchen.sink-cabinet').defaults).toMatchObject({ width: 120, depth: 60, height: 90 })
@@ -226,7 +242,7 @@ describe('biblioteca', () => {
     expect(ids(searchComponents('pia'))).toEqual(['kitchen.sink-cabinet'])
     expect(ids(searchComponents('eletrodomesticos'))).toHaveLength(11)
     expect(ids(searchComponents('lava louças'))).toEqual(['appliance.dishwasher-8', 'appliance.dishwasher-10', 'appliance.dishwasher-14'])
-    expect(ids(searchComponents('tanque'))).toEqual(['laundry.tank-cabinet'])
+    expect(ids(searchComponents('tanque'))).toEqual(['laundry.tank-cabinet', 'laundry.tank-suspended'])
     expect(ids(searchComponents('aereo'))).toEqual(['kitchen.wall-cabinet', 'laundry.wall-cabinet'])
     expect(ids(searchComponents('janela correr'))).toEqual(['window.sliding'])
     expect(searchComponents('JANELAS')).toHaveLength(4)
