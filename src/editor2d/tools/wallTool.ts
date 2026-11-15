@@ -1,9 +1,9 @@
 import { add, dist, normalize, scale, sub } from '../../model/geometry'
 import { parseLength } from '../../model/units'
-import { drawWallSegment, NODE_TOL, nodePos } from '../../model/walls'
+import { defaultWallProps, drawWallSegment, NODE_TOL, nodePos } from '../../model/walls'
 import type { Point } from '../../model/types'
 import { snapPoint } from '../snapping'
-import { docStore, project, pxPerCm, ui } from './context'
+import { docStore, editor, project, pxPerCm, ui } from './context'
 import type { PointerInfo, Tool, ToolKey } from './types'
 
 /**
@@ -30,7 +30,7 @@ export function createWallTool(): Tool {
     const from = start
     let endNode = ''
     docStore().update('Parede criada', (d) => {
-      endNode = drawWallSegment(d, from, end).endNode
+      endNode = drawWallSegment(d, from, end, defaultWallProps(d, editor().wallKind)).endNode
     })
     const endPos = nodePos(project(), endNode)
     if (chainStart && dist(endPos, chainStart) <= NODE_TOL) {

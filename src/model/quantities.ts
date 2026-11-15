@@ -8,6 +8,7 @@ import { dist, midpoint, normalize, perp, pointInPolygon, scale, sub, add } from
 import { detectFaces, type Face } from './rooms'
 import type { Id, Point, Project } from './types'
 import { wallPolygons } from './wallGeometry'
+import { kindOf } from './walls'
 
 type Ring = [number, number][]
 /** Polígono com furos: o primeiro anel é o contorno, os demais são furos. */
@@ -68,6 +69,13 @@ export interface Quantities {
   cobogo: { area: number; pieces: number }
   /** Quantidade de cada móvel. */
   itemCounts: OpeningCount[]
+  /**
+   * Divisórias (drywall) e painéis (parede falsa, painel de TV), para orçar à parte:
+   * comprimento pelo eixo e área de um lado (comprimento × altura − vãos).
+   * As divisórias também entram na superfície de paredes; os painéis, não.
+   */
+  partitions: { length: number; area: number }
+  panels: { length: number; area: number; count: number }
   /** Faces de cada parede: esquerda e direita em relação ao sentido a → b. */
   wallSides: Map<Id, { left: WallSide; right: WallSide }>
 }
@@ -255,10 +263,26 @@ function compute(p: Project): Quantities {
   const surface = { internal: 0, external: 0 }
   let wallLength = 0
   const roomByKey = new Map(rooms.map((r) => [r.key, r]))
+  const partitions = { length: 0, area: 0 }
+  const panels = { length: 0, area: 0, count: 0 }
   for (const w of Object.values(p.walls)) {
     const poly = polys.get(w.id)
     if (!poly) continue
-    wallLength += dist(poly.a, poly.b)
+    const axis = dist(poly.a, poly.b)
+    const kind = kindOf(w)
+    const oneSide = Math.max(0, axis * w.height - (openingAreaByWall.get(w.id) ?? 0))
+    if (kind === 'panel') {
+      // Painel: só a área dele, fora da superfície de pintura das paredes.
+      panels.length += axis
+      panels.area += oneSide
+      panels.count += 1
+      continue
+    }
+    if (kind === 'partition') {
+      partitions.length += axis
+      partitions.area += oneSide
+    }
+    wallLength += axis
     const n = perp(normalize(sub(poly.b, poly.a)))
     const [l0, l1, , r1, r0] = poly.points as [Point, Point, Point, Point, Point, Point]
     const holes = openingAreaByWall.get(w.id) ?? 0
@@ -290,6 +314,8 @@ function compute(p: Project): Quantities {
     openingCounts: [...countById].map(([componentId, count]) => ({ componentId, count })),
     cobogo,
     itemCounts: countBy(Object.values(p.items).map((it) => it.componentId)),
+    partitions,
+    panels,
     wallSides,
   }
 }

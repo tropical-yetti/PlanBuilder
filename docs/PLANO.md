@@ -15,7 +15,9 @@ O MVP (fases 0 a 7 da seção 9) está implementado. Do roadmap da seção 11 (v
 - **Eletrodomésticos** com medidas de modelos Brastemp (fogões, geladeiras, lavadoras, lava-louças) e a **porta sanfonada**.
 - **Gabinetes de cozinha e lavanderia** (categoria "Cozinha e lavanderia"): gabinete de pia, balcão, armários aéreos, gabinete com tanque e armário alto.
 
-Faltam da v1.0: pisos (seção 11.1), painéis e divisórias (seção 11.2), louças de banheiro, agrupar, imagem de fundo para decalcar e PDF em escala.
+- **Tipos de parede** (seção 11.2): alvenaria, divisória e painel.
+
+Faltam da v1.0: pisos (seção 11.1), louças de banheiro, agrupar, imagem de fundo para decalcar e PDF em escala.
 
 Diferenças em relação ao que este plano previa:
 

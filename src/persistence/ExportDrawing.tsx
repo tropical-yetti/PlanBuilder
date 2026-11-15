@@ -27,7 +27,7 @@ export function ExportDrawing({ project, layout, options, onStage }: { project: 
         {options.grid && <GridLayer view={view} width={layout.width} height={layout.height} />}
         <RoomLayer rooms={quantities(project).rooms} pxPerCm={k} highlighted={null} editing={null} showLabels={options.roomLabels} />
       </Layer>
-      <WallLayer polygons={polygons} selected={NONE} hovered={null} hoverColor={C.wallFill} locked={NONE} />
+      <WallLayer polygons={polygons} selected={NONE} hovered={null} hoverColor={C.wallFill} locked={NONE} kinds={new Map(Object.values(project.walls).flatMap((w) => (w.kind ? [[w.id, w.kind] as const] : [])))} />
       <Layer listening={false}>
         <ItemLayer items={Object.values(project.items)} pxPerCm={k} colorOf={() => C.furniture} />
         <OpeningLayer shapes={openingShapes(project, () => C.opening)} pxPerCm={k} gapColor="#ffffff" />

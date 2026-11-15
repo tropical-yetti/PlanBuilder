@@ -28,6 +28,11 @@ export function areasAsTsv(q: Quantities): string {
     rows.push([], ['Portas e janelas', 'Quantidade'])
     for (const c of q.openingCounts) rows.push([getComponent(c.componentId).name, c.count])
   }
+  if (q.partitions.length > 0 || q.panels.count > 0) {
+    rows.push([], ['Divisórias e painéis', 'Comprimento (m)', 'Área (m²)'])
+    if (q.partitions.length > 0) rows.push(['Divisórias (drywall)', m(q.partitions.length), m2(q.partitions.area)])
+    if (q.panels.count > 0) rows.push(['Painéis', m(q.panels.length), m2(q.panels.area)])
+  }
   if (q.cobogo.area > 0) {
     rows.push([], ['Cobogó', 'Valor'], ['Área de cobogó (m²)', m2(q.cobogo.area)], ['Peças (estimativa)', q.cobogo.pieces])
   }

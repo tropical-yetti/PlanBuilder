@@ -53,6 +53,8 @@ function sanitize(raw: Raw): { project: Project; warnings: string[] } {
       gridSize: num(settings.gridSize) && settings.gridSize > 0 ? settings.gridSize : DEFAULT_SETTINGS.gridSize,
       defaultWallThickness: num(settings.defaultWallThickness) && settings.defaultWallThickness > 0 ? settings.defaultWallThickness : DEFAULT_SETTINGS.defaultWallThickness,
       defaultWallHeight: num(settings.defaultWallHeight) && settings.defaultWallHeight > 0 ? settings.defaultWallHeight : DEFAULT_SETTINGS.defaultWallHeight,
+      ...(num(settings.partitionThickness) && settings.partitionThickness > 0 ? { partitionThickness: settings.partitionThickness } : {}),
+      ...(num(settings.panelThickness) && settings.panelThickness > 0 ? { panelThickness: settings.panelThickness } : {}),
     },
     nodes: {},
     walls: {},
@@ -84,6 +86,8 @@ function sanitize(raw: Raw): { project: Project; warnings: string[] } {
       b: w.b as string,
       thickness: w.thickness as number,
       height: w.height as number,
+      // tipo desconhecido (de uma versão futura) é tratado como alvenaria
+      ...(w.kind === 'partition' || w.kind === 'panel' ? { kind: w.kind } : {}),
       ...(w.locked === true ? { locked: true } : {}),
     }
   }

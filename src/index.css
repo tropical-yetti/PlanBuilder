@@ -1220,3 +1220,26 @@ kbd {
   font-weight: 400;
   color: var(--muted);
 }
+
+/* Opções da ferramenta, sobre a planta */
+.tool-options {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 15;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tool-options .segmented.small button {
+  padding: 0 10px;
+}

@@ -9,11 +9,13 @@
 import { add, dist, dot, normalize, perp, scale, sub } from '../model/geometry'
 import { openingsOnWall } from '../model/openings'
 import { wallPolygons } from '../model/wallGeometry'
-import type { Id, Point, Project } from '../model/types'
+import type { Id, Point, Project, WallKind } from '../model/types'
 
 export interface WallPiece {
   wallId: Id
   kind: 'solid' | 'sill' | 'lintel'
+  /** Tipo da parede (alvenaria, divisória ou painel), para o material. */
+  wallKind: WallKind
   /** Contorno em planta (cm). */
   points: Point[]
   /** Altura da base e do topo (cm). */
@@ -51,7 +53,7 @@ export function buildWallPieces(p: Project): WallPiece[] {
       return pts
     }
     const push = (kind: WallPiece['kind'], u: number, v: number, y0: number, y1: number) => {
-      if (v - u > 0.01 && y1 - y0 > MIN_HEIGHT) pieces.push({ wallId: w.id, kind, points: footprint(u, v), y0, y1 })
+      if (v - u > 0.01 && y1 - y0 > MIN_HEIGHT) pieces.push({ wallId: w.id, kind, wallKind: w.kind ?? 'masonry', points: footprint(u, v), y0, y1 })
     }
 
     let cursor = 0

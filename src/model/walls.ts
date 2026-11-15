@@ -26,15 +26,30 @@ import {
   tidy,
 } from './geometry'
 import { newId } from './project'
-import type { Id, Opening, Point, Project, Wall } from './types'
+import type { Id, Opening, Point, Project, Wall, WallKind } from './types'
 
 /** Pontos a menos de 0,5 cm um do outro são considerados o mesmo nó. */
 export const NODE_TOL = 0.5
 
-export type WallProps = Pick<Wall, 'thickness' | 'height'>
+export type WallProps = Pick<Wall, 'thickness' | 'height'> & { kind?: WallKind }
 
-export function defaultWallProps(p: Project): WallProps {
-  return { thickness: p.settings.defaultWallThickness, height: p.settings.defaultWallHeight }
+/** Espessura padrão de cada tipo de parede, quando o projeto não define outra. */
+export const KIND_THICKNESS: Record<WallKind, number> = { masonry: 15, partition: 9.5, panel: 4.5 }
+
+export const kindOf = (w: Pick<Wall, 'kind'>): WallKind => w.kind ?? 'masonry'
+
+/** O tipo de parede separa cômodos? (Painéis não.) */
+export const dividesRooms = (w: Pick<Wall, 'kind'>): boolean => kindOf(w) !== 'panel'
+
+/** Espessura padrão de um tipo de parede neste projeto. */
+export function defaultThickness(p: Project, kind: WallKind): number {
+  if (kind === 'partition') return p.settings.partitionThickness ?? KIND_THICKNESS.partition
+  if (kind === 'panel') return p.settings.panelThickness ?? KIND_THICKNESS.panel
+  return p.settings.defaultWallThickness
+}
+
+export function defaultWallProps(p: Project, kind: WallKind = 'masonry'): WallProps {
+  return { thickness: defaultThickness(p, kind), height: p.settings.defaultWallHeight, ...(kind === 'masonry' ? {} : { kind }) }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -160,7 +175,7 @@ export function addWall(p: Project, a: Id, b: Id, props: WallProps): Id | null {
   const existing = findWallBetween(p, a, b)
   if (existing) return existing.id
   const id = newId()
-  p.walls[id] = { id, a, b, thickness: props.thickness, height: props.height }
+  p.walls[id] = { id, a, b, thickness: props.thickness, height: props.height, ...(props.kind && props.kind !== 'masonry' ? { kind: props.kind } : {}) }
   return id
 }
 
@@ -299,6 +314,8 @@ export function collinearPairAt(p: Project, nodeId: Id, angleTolDeg = 0.5): [Wal
   const ws = wallsAtNode(p, nodeId)
   if (ws.length !== 2) return null
   const [w1, w2] = ws as [Wall, Wall]
+  // Só paredes do mesmo tipo viram uma (um painel não se funde com a alvenaria).
+  if (kindOf(w1) !== kindOf(w2)) return null
   const n = nodePos(p, nodeId)
   const d1 = normalize(sub(nodePos(p, otherNode(w1, nodeId)), n))
   const d2 = normalize(sub(nodePos(p, otherNode(w2, nodeId)), n))
@@ -396,7 +413,7 @@ export function parallelMovePositions(p: Project, wallId: Id, distance: number):
   return result
 }
 
-/** Paredes alinhadas em sequência com a dada (a mesma linha reta, mesmo que dividida em trechos por um T). */
+/** Paredes do mesmo tipo alinhadas em sequência com a dada (a mesma linha reta, mesmo que dividida em trechos por um T). */
 export function collinearRun(p: Project, wallId: Id, angleTolDeg = 0.5): Id[] {
   const w = p.walls[wallId]
   if (!w) return []
@@ -409,7 +426,7 @@ export function collinearRun(p: Project, wallId: Id, angleTolDeg = 0.5): Id[] {
     const cur = stack.pop()!
     for (const nodeId of [cur.a, cur.b]) {
       for (const o of wallsAtNode(p, nodeId)) {
-        if (run.has(o.id)) continue
+        if (run.has(o.id) || kindOf(o) !== kindOf(w)) continue
         const od = normalize(sub(nodePos(p, otherNode(o, nodeId)), nodePos(p, nodeId)))
         if (Math.abs(cross(od, d)) <= tol) {
           run.add(o.id)

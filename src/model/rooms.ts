@@ -8,6 +8,7 @@
  */
 import { angleOf, signedArea, sub } from './geometry'
 import type { Id, Point, Project } from './types'
+import { dividesRooms } from './walls'
 
 export interface Face {
   /** Nós do contorno, em ordem. Paredes soltas dentro da face aparecem como ida e volta. */
@@ -51,7 +52,9 @@ export function detectFaces(p: Project): FaceSet {
     list.push({ from, to, wallId, angle: angleOf(sub(b, a)), used: false })
     out.set(from, list)
   }
-  for (const w of Object.values(p.walls)) {
+  // Painéis (parede falsa, painel de TV) não separam cômodos: ficam fora do grafo.
+  const dividing = Object.values(p.walls).filter(dividesRooms)
+  for (const w of dividing) {
     if (w.a === w.b) continue
     push(w.a, w.b, w.id)
     push(w.b, w.a, w.id)
@@ -67,7 +70,7 @@ export function detectFaces(p: Project): FaceSet {
     return r
   }
   for (const id of out.keys()) parent.set(id, id)
-  for (const w of Object.values(p.walls)) {
+  for (const w of dividing) {
     if (parent.has(w.a) && parent.has(w.b)) parent.set(find(w.a), find(w.b))
   }
   const componentIndex = new Map<Id, number>()

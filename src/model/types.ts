@@ -14,6 +14,14 @@ export interface WallNode extends Point {
   id: Id
 }
 
+/**
+ * Tipo da parede (docs/PLANO.md, seção 11.2):
+ * - masonry: alvenaria (tijolo, bloco); divide cômodos;
+ * - partition: divisória de drywall do piso ao teto; divide cômodos;
+ * - panel: painel (parede falsa de gesso, painel de TV, meia-parede); não divide cômodos.
+ */
+export type WallKind = 'masonry' | 'partition' | 'panel'
+
 export interface Wall {
   id: Id
   /** Nó da ponta inicial. */
@@ -22,6 +30,8 @@ export interface Wall {
   b: Id
   thickness: number
   height: number
+  /** Ausente = alvenaria (projetos anteriores aos tipos de parede). */
+  kind?: WallKind
   locked?: boolean
 }
 
@@ -96,6 +106,9 @@ export interface ProjectSettings {
   gridSize: number
   defaultWallThickness: number
   defaultWallHeight: number
+  /** Espessura padrão das divisórias e dos painéis (ausente = padrão do app). */
+  partitionThickness?: number
+  panelThickness?: number
 }
 
 export const SCHEMA_VERSION = 1

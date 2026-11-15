@@ -8,7 +8,7 @@ import { addOpening, fitOpeningsToWalls, isOpeningValid, offsetRange } from './o
 import { newId } from './project'
 import { classify } from './selection'
 import { itemCorners, normalizeAngle, resizeItem } from './items'
-import type { Dimension, Id, Item, Opening, Point, Project, TextNote } from './types'
+import type { Dimension, Id, Item, Opening, Point, Project, TextNote, WallKind } from './types'
 import { connectMovedNodes, drawWallSegment, findWallAt, nodePos, nodesOfWalls, openingCenter, setNodePositions, wallEnds, wallLength } from './walls'
 
 // ---------------------------------------------------------------------------------------------
@@ -238,7 +238,7 @@ type OpeningData = Omit<Opening, 'id' | 'wallId' | 'offset' | 'locked'>
 export interface Clip {
   app: 'planbuilder'
   v: 1
-  walls: { a: Point; b: Point; thickness: number; height: number }[]
+  walls: { a: Point; b: Point; thickness: number; height: number; kind?: WallKind }[]
   /** Aberturas pelo centro no mundo; ao colar, cada uma procura a parede que passa por ali. */
   openings: (OpeningData & { center: Point; sourceWallId: Id; sourceOffset: number; alone: boolean })[]
   texts: Omit<TextNote, 'id' | 'locked'>[]
@@ -260,7 +260,7 @@ export function copySelection(p: Project, ids: Id[]): Clip | null {
     v: 1,
     walls: c.walls.map((w) => {
       const [a, b] = wallEnds(p, w)
-      return { a, b, thickness: w.thickness, height: w.height }
+      return { a, b, thickness: w.thickness, height: w.height, ...(w.kind ? { kind: w.kind } : {}) }
     }),
     openings: [...openings.values()].map(({ o, alone }) => ({
       componentId: o.componentId,
@@ -327,7 +327,7 @@ export function pasteClip(p: Project, clip: Clip, delta: Point): Id[] {
   const created: Id[] = []
 
   for (const w of clip.walls) {
-    const r = drawWallSegment(p, move(w.a), move(w.b), { thickness: w.thickness, height: w.height })
+    const r = drawWallSegment(p, move(w.a), move(w.b), { thickness: w.thickness, height: w.height, kind: w.kind })
     created.push(...r.wallIds)
   }
 
@@ -375,7 +375,7 @@ export function pasteClip(p: Project, clip: Clip, delta: Point): Id[] {
 // Copiar e colar propriedades
 
 export interface StyleClip {
-  wall?: { thickness: number; height: number }
+  wall?: { thickness: number; height: number; kind?: WallKind }
   opening?: { componentId: string; width: number; height: number; sillHeight: number; params: Record<string, unknown> }
   text?: { size: number; rotation: number }
   item?: { componentId: string; width: number; depth: number; height: number; params: Record<string, unknown> }
@@ -390,7 +390,7 @@ export function copyStyle(p: Project, ids: Id[]): StyleClip | null {
   const t = c.texts[0]
   const it = c.items[0]
   if (it) style.item = { componentId: it.componentId, width: it.width, depth: it.depth, height: it.height, params: { ...it.params } }
-  if (w) style.wall = { thickness: w.thickness, height: w.height }
+  if (w) style.wall = { thickness: w.thickness, height: w.height, kind: w.kind }
   if (o) style.opening = { componentId: o.componentId, width: o.width, height: o.height, sillHeight: o.sillHeight, params: { ...o.params } }
   if (t) style.text = { size: t.size, rotation: t.rotation }
   return w || o || t || it ? style : null
@@ -404,6 +404,8 @@ export function pasteStyle(p: Project, ids: Id[], style: StyleClip): void {
       if (w.locked) continue
       w.thickness = style.wall.thickness
       w.height = style.wall.height
+      if (style.wall.kind) w.kind = style.wall.kind
+      else delete w.kind
     }
   }
   if (style.opening) {

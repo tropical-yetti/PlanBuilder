@@ -109,6 +109,26 @@ export function AreasPanel() {
         <Row label="Comprimento de paredes" value={formatMeters(q.wallLength)} title="Soma dos comprimentos pelo eixo" />
       </section>
 
+      {(q.partitions.length > 0 || q.panels.count > 0) && (
+        <section>
+          <h3 className="props-subtitle">Divisórias e painéis</h3>
+          {q.partitions.length > 0 && (
+            <Row
+              label="Divisórias (drywall)"
+              value={`${formatMeters(q.partitions.length)} · ${formatArea(q.partitions.area)}`}
+              title="Comprimento e área de um lado. As divisórias também entram na superfície de paredes."
+            />
+          )}
+          {q.panels.count > 0 && (
+            <Row
+              label={q.panels.count === 1 ? 'Painel' : `Painéis (${q.panels.count})`}
+              value={`${formatMeters(q.panels.length)} · ${formatArea(q.panels.area)}`}
+              title="Paredes falsas, painéis de TV e meias-paredes: comprimento e área de um lado. Não entram na superfície de pintura nem formam cômodos."
+            />
+          )}
+        </section>
+      )}
+
       <section>
         <h3 className="props-subtitle">Cômodos ({q.rooms.length})</h3>
         {q.rooms.length === 0 ? (
