@@ -4,18 +4,27 @@ import { fitOpeningsToWalls, moveOpening } from '../../model/openings'
 import { roomAt } from '../../model/quantities'
 import { classify, isLocked } from '../../model/selection'
 import { settleSelection, shiftSelection } from '../../model/transforms'
-import { connectMovedNodes, nodePos, openingCenter, otherNode, parallelMovePositions, setNodePositions, splitWall, wallEnds, wallLength, wallsAtNode } from '../../model/walls'
+import { connectMovedNodes, nodePos, runMovePositions, openingCenter, otherNode, parallelMovePositions, setNodePositions, splitWall, wallEnds, wallLength, wallsAtNode } from '../../model/walls'
 import type { Id, Point, Project } from '../../model/types'
 import { hitTest, hitWall, objectsInBox } from '../hitTest'
+import type { HoverTarget } from '../interactionStore'
 import { snapPoint } from '../snapping'
 import { docStore, editor, project, pxPerCm, ui } from './context'
 import { nearestWall, placeItem, snapOffset } from './placeTool'
 import type { PointerInfo, Tool } from './types'
 
-type Mode = 'idle' | 'node' | 'wall' | 'opening' | 'item' | 'move' | 'box' | 'none'
+type Mode = 'idle' | 'node' | 'wall' | 'opening' | 'item' | 'move' | 'box' | 'shift' | 'none'
 
 /** Distância mínima (px) para um clique virar arraste. */
 const DRAG_PX = 4
+
+/** A trava de direção está ativa (Shift, ou Ctrl/Cmd). */
+const axisLocked = (e: PointerInfo) => e.shift || e.ctrl
+
+/** Mantém só o componente predominante do deslocamento (horizontal ou vertical). */
+export function lockToAxis(delta: Point): Point {
+  return Math.abs(delta.x) >= Math.abs(delta.y) ? { x: delta.x, y: 0 } : { x: 0, y: delta.y }
+}
 
 /**
  * Selecionar: clique seleciona; Shift+clique adiciona/remove; arrastar no vazio faz caixa de seleção.
@@ -25,6 +34,11 @@ const DRAG_PX = 4
  * - Arrastar um móvel o move; sofás, camas e poltronas encostam o fundo na parede ao chegar perto dela.
  * - Arrastar um texto, uma cota ou qualquer objeto de uma seleção múltipla move tudo junto.
  * - Duplo clique: na parede insere um nó; no texto edita; dentro de um cômodo edita o nome.
+ *
+ * Trava (Shift ou Ctrl/Cmd segurado durante o arraste):
+ * - parede: move a linha reta inteira em paralelo, sem mudar o ângulo de nenhuma parede;
+ * - canto, móvel, texto, cota ou grupo: só na horizontal ou só na vertical (a direção predominante).
+ * Shift+clique sem arrastar continua adicionando ou removendo da seleção.
  */
 export function createSelectTool(): Tool {
   let mode: Mode = 'idle'
@@ -43,6 +57,8 @@ export function createSelectTool(): Tool {
   /** Objetos arrastados juntos e o deslocamento já aplicado a eles. */
   let moveIds: Id[] = []
   let applied: Point = { x: 0, y: 0 }
+  /** Objeto clicado com Shift: vira arraste (com trava) se o mouse andar, ou alterna a seleção se não andar. */
+  let shiftHit: HoverTarget | null = null
   /** O cursor está sobre um objeto bloqueado (mostra o cursor de "não permitido"). */
   let overLocked = false
 
@@ -58,6 +74,7 @@ export function createSelectTool(): Tool {
     itemId = null
     moveIds = []
     applied = { x: 0, y: 0 }
+    shiftHit = null
     ui().set({ box: null, snap: null })
   }
 
@@ -66,9 +83,24 @@ export function createSelectTool(): Tool {
     editor().setSelection(sel.includes(id) ? sel.filter((s) => s !== id) : [...sel, id])
   }
 
+  /** Linha-guia da trava, do ponto de partida até onde o objeto está agora. */
+  function showLockGuide(from: Point, to: Point) {
+    ui().set({ snap: { point: to, kind: 'align', guides: [{ a: from, b: to }] } })
+  }
+
   function dragNode(e: PointerInfo) {
     const p = orig!
     const id = nodeId!
+    if (axisLocked(e)) {
+      const start = nodePos(p, id)
+      const axis = lockToAxis(sub(e.world, pressWorld))
+      const s = snapPoint(p, { x: start.x + axis.x, y: start.y + axis.y }, { pxPerCm: pxPerCm(), alt: e.alt, excludeNodes: [id] })
+      // os snaps continuam valendo, mas só ao longo da direção travada
+      const point = axis.y === 0 ? { x: s.point.x, y: start.y } : { x: start.x, y: s.point.y }
+      docStore().update('Canto movido', (d) => setNodePositions(d, { [id]: point }))
+      showLockGuide(start, point)
+      return
+    }
     const walls = wallsAtNode(p, id)
     // Com uma só parede ligada ao canto, o ângulo é travado em relação à outra ponta.
     const from = walls.length === 1 ? nodePos(p, otherNode(walls[0]!, id)) : undefined
@@ -82,13 +114,18 @@ export function createSelectTool(): Tool {
     const w = p.walls[wallId!]!
     const n = perp(normalize(sub(nodePos(p, w.b), nodePos(p, w.a))))
     const raw = dot(sub(e.world, pressWorld), n)
-    const positions = parallelMovePositions(p, w.id, e.alt ? raw : Math.round(raw))
+    const distance = e.alt ? raw : Math.round(raw)
+    // Com a trava, a linha reta inteira anda junto e nenhuma parede muda de ângulo.
+    const positions = axisLocked(e) ? runMovePositions(p, w.id, distance) : parallelMovePositions(p, w.id, distance)
     docStore().update('Parede movida', (doc) => setNodePositions(doc, positions))
   }
 
   function dragMove(e: PointerInfo) {
     const step = e.alt ? 0.01 : 1
-    const total = { x: Math.round((e.world.x - pressWorld.x) / step) * step, y: Math.round((e.world.y - pressWorld.y) / step) * step }
+    const raw = axisLocked(e) ? lockToAxis(sub(e.world, pressWorld)) : sub(e.world, pressWorld)
+    const total = { x: Math.round(raw.x / step) * step, y: Math.round(raw.y / step) * step }
+    if (axisLocked(e)) showLockGuide(pressWorld, { x: pressWorld.x + total.x, y: pressWorld.y + total.y })
+    else ui().set({ snap: null })
     const delta = { x: total.x - applied.x, y: total.y - applied.y }
     if (delta.x === 0 && delta.y === 0) return
     applied = total
@@ -99,9 +136,16 @@ export function createSelectTool(): Tool {
   function dragItem(e: PointerInfo) {
     const it = project().items[itemId!]
     if (!it) return
-    const center = { x: itemStart.x + e.world.x - pressWorld.x, y: itemStart.y + e.world.y - pressWorld.y }
-    // Ao sair de perto da parede, o móvel volta ao giro que tinha antes de encostar.
-    const pos = placeItem(project(), getItem(it.componentId), center, it, itemStart.rotation, pxPerCm(), e.alt)
+    const locked = axisLocked(e)
+    const delta = locked ? lockToAxis(sub(e.world, pressWorld)) : sub(e.world, pressWorld)
+    const center = { x: itemStart.x + delta.x, y: itemStart.y + delta.y }
+    // Com a trava, o móvel só desliza (sem encostar nem girar): ao longo de uma parede, continua encostado nela.
+    // Sem a trava, ao sair de perto da parede o móvel volta ao giro que tinha antes de encostar.
+    const pos = locked
+      ? { x: Math.round(center.x), y: Math.round(center.y), rotation: itemStart.rotation }
+      : placeItem(project(), getItem(it.componentId), center, it, itemStart.rotation, pxPerCm(), e.alt)
+    if (locked) showLockGuide({ x: itemStart.x, y: itemStart.y }, pos)
+    else ui().set({ snap: null })
     const id = it.id
     docStore().update('Móvel movido', (d) => {
       const target = d.items[id]!
@@ -132,6 +176,38 @@ export function createSelectTool(): Tool {
     docStore().update('Abertura movida', (d) => void moveOpening(d, id, target.id, offset))
   }
 
+  /** Define o que o arraste vai mover, a partir do objeto clicado. */
+  function prepareDrag(p: Project, hit: HoverTarget, at: Point) {
+    if (!editor().selection.includes(hit.id)) editor().setSelection([hit.id])
+    const selected = editor().selection.filter((id) => !isLocked(p, id))
+    const c = classify(p, selected)
+
+    // Vários objetos selecionados (ou um texto/cota): arrastar move tudo junto.
+    if (c.count > 1 || hit.kind === 'text' || hit.kind === 'dimension') {
+      // Aberturas andam com as suas paredes; sozinhas, não entram no arraste em grupo.
+      moveIds = [...c.walls, ...c.items, ...c.texts, ...c.dimensions].map((o) => o.id)
+      mode = moveIds.length > 0 ? 'move' : 'none'
+      return
+    }
+    if (hit.kind === 'item') {
+      const it = p.items[hit.id]!
+      mode = 'item'
+      itemId = it.id
+      itemStart = { x: it.x, y: it.y, rotation: it.rotation }
+      return
+    }
+    if (hit.kind === 'opening') {
+      mode = 'opening'
+      openingId = hit.id
+      const o = p.openings[hit.id]!
+      const [a, b] = wallEnds(p, p.walls[o.wallId]!)
+      grab = dot(sub(at, openingCenter(p, o)), normalize(sub(b, a)))
+      return
+    }
+    mode = 'wall'
+    wallId = hit.id
+  }
+
   return {
     cursor() {
       if (draggingDoc() && mode !== 'node') return 'grabbing'
@@ -160,38 +236,12 @@ export function createSelectTool(): Tool {
         return
       }
       if (e.shift) {
-        toggle(hit.id)
-        mode = 'none'
+        // Decide no movimento seguinte: arrastar com trava, ou alternar a seleção ao soltar sem mover.
+        shiftHit = hit
+        mode = 'shift'
         return
       }
-      if (!editor().selection.includes(hit.id)) editor().setSelection([hit.id])
-      const selected = editor().selection.filter((id) => !isLocked(p, id))
-      const c = classify(p, selected)
-
-      // Vários objetos selecionados (ou um texto/cota): arrastar move tudo junto.
-      if (c.count > 1 || hit.kind === 'text' || hit.kind === 'dimension') {
-        // Aberturas andam com as suas paredes; sozinhas, não entram no arraste em grupo.
-        moveIds = [...c.walls, ...c.items, ...c.texts, ...c.dimensions].map((o) => o.id)
-        mode = moveIds.length > 0 ? 'move' : 'none'
-        return
-      }
-      if (hit.kind === 'item') {
-        const it = p.items[hit.id]!
-        mode = 'item'
-        itemId = it.id
-        itemStart = { x: it.x, y: it.y, rotation: it.rotation }
-        return
-      }
-      if (hit.kind === 'opening') {
-        mode = 'opening'
-        openingId = hit.id
-        const o = p.openings[hit.id]!
-        const [a, b] = wallEnds(p, p.walls[o.wallId]!)
-        grab = dot(sub(e.world, openingCenter(p, o)), normalize(sub(b, a)))
-        return
-      }
-      mode = 'wall'
-      wallId = hit.id
+      prepareDrag(p, hit, e.world)
     },
 
     onPointerMove(e) {
@@ -205,6 +255,17 @@ export function createSelectTool(): Tool {
       if (mode === 'none') return
       if (!moved) {
         if (dist(e.screen, pressScreen) < DRAG_PX) return
+        if (mode === 'shift' && shiftHit) {
+          // Shift+arrastar: inclui o objeto na seleção (se ainda não estiver) e arrasta com a trava.
+          if (!editor().selection.includes(shiftHit.id)) editor().setSelection([...editor().selection, shiftHit.id])
+          if (shiftHit.kind === 'node') {
+            mode = 'node'
+            nodeId = shiftHit.id
+          } else prepareDrag(orig!, shiftHit, pressWorld)
+          shiftHit = null
+          // prepareDrag pode concluir que não há o que arrastar
+          if ((mode as Mode) === 'none') return
+        }
         moved = true
         if (mode === 'node') docStore().begin('Canto movido')
         if (mode === 'wall') docStore().begin('Parede movida')
@@ -221,7 +282,9 @@ export function createSelectTool(): Tool {
     },
 
     onPointerUp(e) {
-      if (mode === 'node') {
+      if (mode === 'shift' && shiftHit) {
+        toggle(shiftHit.id)
+      } else if (mode === 'node') {
         if (moved) {
           const id = nodeId!
           docStore().update('Canto movido', (d) => {

@@ -26,7 +26,8 @@ Tudo roda no navegador; nenhum dado sai do seu computador.
 | Desenhar parede por parede | `W`, clique em cada canto; digite o comprimento + `Enter`; `Esc` encerra |
 | Inserir porta, janela ou cobogó | Clique no item da biblioteca e depois na parede (ou arraste) |
 | Inserir móvel | Clique no item da biblioteca e depois na planta; perto de uma parede ele encosta; `R` gira |
-| Selecionar e mover | `V`; arraste a parede, o canto ou a porta |
+| Selecionar e mover | `V`; arraste a parede, o canto, a porta ou o móvel |
+| Mover sem mudar ângulos | Segure `Shift` ou `Ctrl` ao arrastar: a parede leva junto a linha reta inteira; cantos, móveis e grupos andam só na horizontal ou vertical |
 | Dar nome a um cômodo | Duplo clique dentro dele |
 | Ver as áreas | Aba **Áreas** do painel lateral |
 | Ver em 3D | Botões **Dividido** ou **3D**, no alto à direita |

@@ -393,3 +393,79 @@ describe('móveis e cobogó na planta', () => {
     expect(doc().past.at(-1)!.label).toBe('Cobogó inserido')
   })
 })
+
+describe('trava de direção ao arrastar (Shift ou Ctrl)', () => {
+  /** Arrasta com a tecla de trava pressionada só depois do clique (como acontece na prática com Ctrl). */
+  function lockedDrag(from: [number, number], to: [number, number], key: 'shift' | 'ctrl' = 'ctrl', pressFirst = false) {
+    const t = tools.select
+    const mod = { [key]: true }
+    t.onPointerMove?.(ev(...from))
+    t.onPointerDown?.(ev(...from, pressFirst ? mod : {}))
+    for (let i = 1; i <= 5; i++) t.onPointerMove?.(ev(from[0] + ((to[0] - from[0]) * i) / 5, from[1] + ((to[1] - from[1]) * i) / 5, mod))
+    t.onPointerUp?.(ev(...to, mod))
+  }
+
+  beforeEach(() => {
+    // sala 400 × 300 dividida por uma parede interna em x = 250: a parede de cima fica em dois trechos
+    doc().update('setup', (d) => {
+      drawRectRoom(d, { x: 0, y: 0 }, { x: 400, y: 300 })
+      drawWallSegment(d, { x: 250, y: 0 }, { x: 250, y: 300 })
+    })
+  })
+
+  it('sem a trava, mover um trecho entorta o trecho vizinho', () => {
+    drag('select', [100, 0], [100, -50])
+    expect(segments(doc().project)).toContain('0,-50-250,-50')
+    // o trecho da direita ficou inclinado (de 250,-50 a 400,0)
+    expect(segments(doc().project)).toContain('250,-50-400,0')
+  })
+
+  it('com a trava, a linha reta inteira anda junto e nenhuma parede muda de ângulo', () => {
+    lockedDrag([100, 0], [130, -50])
+    expect(segments(doc().project)).toEqual([
+      '0,-50-0,300',
+      '0,-50-250,-50',
+      '0,300-250,300',
+      '250,-50-250,300',
+      '250,-50-400,-50',
+      '250,300-400,300',
+      '400,-50-400,300',
+    ])
+    expect(doc().past.at(-1)!.label).toBe('Parede movida')
+  })
+
+  it('Shift apertado antes do clique também arrasta com a trava; sem mover, alterna a seleção', () => {
+    lockedDrag([100, 0], [100, -50], 'shift', true)
+    expect(segments(doc().project)).toContain('250,-50-400,-50')
+    // o trecho da direita (agora em y = −50, de x = 250 a 400)
+    const right = Object.values(doc().project.walls).find((w) => {
+      const [a, b2] = [doc().project.nodes[w.a]!, doc().project.nodes[w.b]!]
+      return a.y === -50 && b2.y === -50 && Math.min(a.x, b2.x) === 250
+    })!
+    ed().setSelection([])
+    tools.select.onPointerDown?.(ev(320, -50, { shift: true }))
+    tools.select.onPointerUp?.(ev(320, -50, { shift: true }))
+    expect(ed().selection).toEqual([right.id])
+    // de novo: Shift+clique sem mover tira da seleção
+    tools.select.onPointerDown?.(ev(320, -50, { shift: true }))
+    tools.select.onPointerUp?.(ev(320, -50, { shift: true }))
+    expect(ed().selection).toEqual([])
+  })
+
+  it('canto travado anda só na direção predominante', () => {
+    lockedDrag([400, 300], [460, 310])
+    expect(doc().project.nodes[Object.keys(doc().project.nodes).find((id) => doc().project.nodes[id]!.x === 460)!]).toMatchObject({ x: 460, y: 300 })
+  })
+
+  it('grupo e móvel travados andam só na horizontal ou na vertical', () => {
+    doc().update('textos', (d) => {
+      d.texts.t = { id: 't', x: 100, y: 100, text: 'A', size: 20, rotation: 0 }
+      d.items.m = { id: 'm', componentId: 'furniture.armchair', x: 150, y: 200, rotation: 0, width: 80, depth: 80, height: 85, mirrored: false, params: {} }
+    })
+    ed().setSelection([])
+    lockedDrag([100, 100], [113, 160])
+    expect(doc().project.texts.t).toMatchObject({ x: 100, y: 160 })
+    lockedDrag([150, 200], [200, 210])
+    expect(doc().project.items.m).toMatchObject({ x: 200, y: 200, rotation: 0 })
+  })
+})
