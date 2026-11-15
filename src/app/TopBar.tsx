@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { commands } from '../commands/registry'
 import { formatShortcut, isMacPlatform } from '../commands/shortcuts'
 import { hasContent } from '../persistence/projectFile'
+import { APP_VERSION } from '../version'
 import { useEditorStore, type ViewMode } from '../store/editorStore'
 import { selectCanRedo, selectCanUndo, useProjectStore } from '../store/projectStore'
 import { Icon } from '../ui/Icon'
@@ -95,9 +96,10 @@ export function TopBar() {
 
   return (
     <header className="topbar">
-      <div className="brand">
+      <div className="brand" title={`PlanBuilder ${APP_VERSION}`}>
         <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width={22} height={22} />
         <span>PlanBuilder</span>
+        <span className="app-version">{APP_VERSION}</span>
       </div>
 
       <nav className="group" aria-label="Arquivo">
