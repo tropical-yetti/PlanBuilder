@@ -8,6 +8,7 @@ import { download } from '../persistence/fileIO'
 import { fileNameFor } from '../persistence/schema'
 import { canCapture3D, capture3D } from '../viewer3d/capture'
 import { useEditorStore, type Dialog } from '../store/editorStore'
+import { APP_VERSION } from '../version'
 import { useProjectStore } from '../store/projectStore'
 
 const isMac = isMacPlatform()
@@ -137,7 +138,9 @@ function Shortcuts() {
   return (
     <Modal title="Atalhos de teclado" wide>
       <div className="modal-head">
-        <h2>Atalhos de teclado</h2>
+        <h2>
+          Atalhos de teclado <span className="app-version">PlanBuilder {APP_VERSION}</span>
+        </h2>
         <button type="button" className="btn" onClick={close} aria-label="Fechar">
           ✕
         </button>
