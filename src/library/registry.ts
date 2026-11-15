@@ -12,7 +12,17 @@ import { doorSwingDouble } from './components/doors/swing-double'
 import { doorSwingSingle } from './components/doors/swing-single'
 import { BEDS } from './components/furniture/beds'
 import { armchair, sofa2, sofa3 } from './components/furniture/seating'
-import { baseCabinet, kitchenWallCabinet, laundryWallCabinet, sinkCabinet, tallCabinet, tankCabinet } from './components/kitchen/cabinets'
+import {
+  baseCabinet,
+  kitchenWallCabinet,
+  laundryBaseCabinet,
+  laundryWallCabinet,
+  sinkCabinet,
+  suspendedTankCabinet,
+  tallCabinet,
+  tankCabinet,
+  washerNicheCabinet,
+} from './components/kitchen/cabinets'
 import { tableRect, tableRound, tableSquare } from './components/furniture/tables'
 import { windowCasement } from './components/windows/casement'
 import { windowFixed } from './components/windows/fixed'
@@ -44,6 +54,9 @@ export const COMPONENTS: LibraryDef[] = [
   baseCabinet,
   kitchenWallCabinet,
   tankCabinet,
+  suspendedTankCabinet,
+  laundryBaseCabinet,
+  washerNicheCabinet,
   laundryWallCabinet,
   tallCabinet,
   stove4,

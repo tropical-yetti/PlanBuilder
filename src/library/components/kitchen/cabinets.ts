@@ -183,6 +183,40 @@ function wallCabinet(id: string, group: string, name: string, tags: string[], de
 
 export const kitchenWallCabinet = wallCabinet('kitchen.wall-cabinet', KITCHEN, 'Armário aéreo', ['cozinha'], { width: 80, height: 70, elevation: 150 })
 
+/** Tanque visto de cima: cuba com esfregador, ralo e torneira no fundo. */
+function tankSymbol(w: number, d: number): Prim[] {
+  const bw = Math.min(w - 10, 46)
+  const bd = Math.min(d - 12, 34)
+  const x = -bw / 2
+  const y = -d / 2 + 6
+  const ribs: Prim[] = [0.55, 0.7, 0.85].map((f) => ({ t: 'line', pts: [x + 4, y + bd * f, x + bw - 4, y + bd * f], thin: true }))
+  return [
+    { t: 'rect', x: -w / 2, y: -d / 2, w, h: d, fill: 'solid', r: 2 },
+    { t: 'rect', x, y, w: bw, h: bd, fill: 'soft', r: 4, thin: true },
+    // esfregador (ranhuras na frente da cuba)
+    ...ribs,
+    { t: 'circle', cx: 0, cy: y + bd * 0.3, r: 2.5, thin: true },
+    { t: 'circle', cx: 0, cy: -d / 2 + 3, r: 2, fill: 'steel', thin: true },
+  ]
+}
+
+/** Gabinete com o tanque em cima. Sem rodapé quando é suspenso (preso na parede). */
+function tankModel(w: number, d: number, h: number, suspended: boolean): Box3[] {
+  const tank = 20
+  const body = h - tank
+  const base = suspended ? 0 : PLINTH
+  return [
+    ...(suspended ? [] : [{ x: 0, y: PLINTH / 2, z: -2, w: w - 2, h: PLINTH, d: d - 8, mat: 'dark' } as Box3]),
+    { x: 0, y: (base + body) / 2, z: -1.5, w, h: body - base, d: d - 5, mat: 'cabinet' },
+    ...doors(w, base, body, d / 2 - 3.5, doorsFor(w)),
+    { x: 0, y: body + tank / 2, z: 0, w, h: tank, d, mat: 'enamel' },
+    { x: 0, y: h + 0.3, z: -d / 2 + 6 + 17, w: Math.min(w - 10, 46), h: 0.6, d: Math.min(d - 12, 34), mat: 'dark' },
+    { x: 0, y: h + 12, z: -d / 2 + 3, w: 3, h: 24, d: 0, mat: 'metal', shape: 'cylinder' },
+  ]
+}
+
+const tankLimits = { minWidth: 40, maxWidth: 150, minDepth: 35, maxDepth: 70, minHeight: 45, maxHeight: 100 }
+
 export const tankCabinet: ItemDef = {
   id: 'laundry.tank-cabinet',
   category: 'kitchen',
@@ -192,35 +226,75 @@ export const tankCabinet: ItemDef = {
   tags: ['tanque', 'gabinete', 'lavanderia', 'área de serviço', 'esfregador'],
   defaults: { width: 60, depth: 50, height: 90, params: {} },
   presets: widths([50, 60, 80, 100], 50),
-  limits: { minWidth: 40, maxWidth: 150, minDepth: 40, maxDepth: 70, minHeight: 70, maxHeight: 100 },
+  limits: { ...tankLimits, minHeight: 70 },
   againstWall: true,
-  symbol: ({ width: w, depth: d }) => {
-    const bw = Math.min(w - 10, 46)
-    const bd = Math.min(d - 12, 34)
-    const x = -bw / 2
-    const y = -d / 2 + 6
-    const ribs: Prim[] = [0.55, 0.7, 0.85].map((f) => ({ t: 'line', pts: [x + 4, y + bd * f, x + bw - 4, y + bd * f], thin: true }))
-    return [
-      { t: 'rect', x: -w / 2, y: -d / 2, w, h: d, fill: 'solid', r: 2 },
-      { t: 'rect', x, y, w: bw, h: bd, fill: 'soft', r: 4, thin: true },
-      // esfregador (ranhuras na frente da cuba)
-      ...ribs,
-      { t: 'circle', cx: 0, cy: y + bd * 0.3, r: 2.5, thin: true },
-      { t: 'circle', cx: 0, cy: -d / 2 + 3, r: 2, fill: 'steel', thin: true },
-    ]
-  },
-  model: ({ width: w, depth: d, height: h }) => {
-    const tank = 20
-    const body = h - tank
-    return [
-      { x: 0, y: PLINTH / 2, z: -2, w: w - 2, h: PLINTH, d: d - 8, mat: 'dark' },
-      { x: 0, y: (PLINTH + body) / 2, z: -1.5, w, h: body - PLINTH, d: d - 5, mat: 'cabinet' },
-      ...doors(w, PLINTH, body, d / 2 - 3.5, doorsFor(w)),
-      { x: 0, y: body + tank / 2, z: 0, w, h: tank, d, mat: 'enamel' },
-      { x: 0, y: h + 0.3, z: -d / 2 + 6 + 17, w: Math.min(w - 10, 46), h: 0.6, d: Math.min(d - 12, 34), mat: 'dark' },
-      { x: 0, y: h + 12, z: -d / 2 + 3, w: 3, h: 24, d: 0, mat: 'metal', shape: 'cylinder' },
-    ]
-  },
+  symbol: ({ width: w, depth: d }) => tankSymbol(w, d),
+  model: ({ width: w, depth: d, height: h }) => tankModel(w, d, h, false),
+}
+
+/**
+ * Gabinete suspenso com tanque: preso na parede, sem pés (comum em áreas de serviço pequenas).
+ * Medida de mercado: 50 × 40 × 52 cm, com o tanque a 90 cm do piso.
+ */
+export const suspendedTankCabinet: ItemDef = {
+  id: 'laundry.tank-suspended',
+  category: 'kitchen',
+  group: LAUNDRY,
+  kind: 'item',
+  name: 'Gabinete suspenso com tanque',
+  tags: ['tanque', 'gabinete', 'suspenso', 'lavanderia', 'área de serviço', 'compacto'],
+  defaults: { width: 50, depth: 40, height: 52, params: { [ELEVATION_PARAM]: 38 } },
+  presets: widths([45, 50, 60], 40),
+  limits: tankLimits,
+  againstWall: true,
+  paramsSchema: [ELEVATION],
+  symbol: ({ width: w, depth: d }) => tankSymbol(w, d),
+  model: ({ width: w, depth: d, height: h }) => tankModel(w, d, h, true),
+}
+
+/** Balcão de lavanderia: gabinete inferior sem tanque, mais raso que o da cozinha. */
+export const laundryBaseCabinet: ItemDef = {
+  id: 'laundry.base-cabinet',
+  category: 'kitchen',
+  group: LAUNDRY,
+  kind: 'item',
+  name: 'Balcão de lavanderia',
+  tags: ['balcão', 'gabinete', 'lavanderia', 'área de serviço', 'bancada', 'armário inferior'],
+  defaults: { width: 80, depth: 50, height: 90, params: {} },
+  presets: widths([40, 60, 80, 100, 120], 50),
+  limits: baseLimits,
+  againstWall: true,
+  symbol: ({ width: w, depth: d }) => baseSymbol(w, d),
+  model: ({ width: w, depth: d, height: h }) => baseModel(w, d, h),
+}
+
+/**
+ * Gabinete com nicho para máquina: tampo sobre a máquina de abertura frontal (lava e seca),
+ * com laterais e o vão livre embaixo. Máquinas de abertura superior não cabem sob tampo.
+ */
+export const washerNicheCabinet: ItemDef = {
+  id: 'laundry.washer-niche',
+  category: 'kitchen',
+  group: LAUNDRY,
+  kind: 'item',
+  name: 'Gabinete com nicho para máquina',
+  tags: ['nicho', 'máquina', 'lava e seca', 'abertura frontal', 'tampo', 'bancada', 'lavanderia', 'área de serviço'],
+  // nicho de 65 cm para a lava e seca de 59,5 cm, com folga de ventilação
+  defaults: { width: 70, depth: 65, height: 90, params: {} },
+  presets: widths([65, 70, 80], 65),
+  limits: { ...baseLimits, minWidth: 60, maxDepth: 75 },
+  againstWall: true,
+  symbol: ({ width: w, depth: d }) => [
+    { t: 'rect', x: -w / 2, y: -d / 2, w, h: d, fill: 'solid' },
+    // vão da máquina embaixo do tampo, tracejado
+    { t: 'line', pts: [-w / 2 + 2, -d / 2 + 2, w / 2 - 2, -d / 2 + 2, w / 2 - 2, d / 2, -w / 2 + 2, d / 2], closed: true, dash: true, thin: true },
+    { t: 'circle', cx: 0, cy: 2, r: Math.min(w, d) * 0.28, dash: true, thin: true },
+  ],
+  model: ({ width: w, depth: d, height: h }) => [
+    { x: -w / 2 + 1, y: (h - TOP) / 2, z: 0, w: 2, h: h - TOP, d, mat: 'cabinet' },
+    { x: w / 2 - 1, y: (h - TOP) / 2, z: 0, w: 2, h: h - TOP, d, mat: 'cabinet' },
+    { x: 0, y: h - TOP / 2, z: 0, w, h: TOP, d, mat: 'stone' },
+  ],
 }
 
 export const laundryWallCabinet = wallCabinet('laundry.wall-cabinet', LAUNDRY, 'Armário aéreo de lavanderia', ['lavanderia', 'área de serviço'], {

@@ -192,7 +192,8 @@ function CameraRig({ frame, fitKey, onReady }: { frame: Framing; fitKey: string;
     const { center, size } = latest.current
     // Em telas estreitas (vista dividida) a câmera se afasta mais, para a planta caber na largura.
     const distance = (size * 1.5 + 2) / Math.min(1, aspectRef.current)
-    camera.position.set(center.x + distance * 0.35, distance * 0.8, center.z + distance * 0.8)
+    // Vista de cima, inclinada cerca de 35°: mostra o interior até de cômodos pequenos, sem as paredes esconderem os móveis.
+    camera.position.set(center.x + distance * 0.3, distance * 0.95, center.z + distance * 0.6)
     controls.current?.target.copy(center)
     controls.current?.update()
     invalidate()
