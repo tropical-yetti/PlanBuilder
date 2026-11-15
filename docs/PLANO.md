@@ -15,7 +15,7 @@ O MVP (fases 0 a 7 da seção 9) está implementado. Do roadmap da seção 11 (v
 - **Eletrodomésticos** com medidas de modelos Brastemp (fogões, geladeiras, lavadoras, lava-louças) e a **porta sanfonada**.
 - **Gabinetes de cozinha e lavanderia** (categoria "Cozinha e lavanderia"): gabinete de pia, balcão, armários aéreos, gabinete com tanque e armário alto.
 
-Faltam da v1.0: louças de banheiro, agrupar, imagem de fundo para decalcar e PDF em escala.
+Faltam da v1.0: pisos (seção 11.1), painéis e divisórias (seção 11.2), louças de banheiro, agrupar, imagem de fundo para decalcar e PDF em escala.
 
 Diferenças em relação ao que este plano previa:
 
@@ -474,10 +474,64 @@ O autosave simples (só `localStorage`, sem arquivo) pode ser antecipado para a 
 
 | Versão | Conteúdo |
 |---|---|
-| **v1.0 (primeiro release no Pages)** | Objetos soltos (móveis, louças, eletrodomésticos) com girar/espelhar/encostar na parede; bibliotecas de banheiro, cozinha, móveis e eletrodomésticos; agrupar; imagem de fundo para decalcar (com calibração de escala); PDF em escala (1:50, 1:100) com carimbo |
-| **v1.x** | Cor/textura de piso por cômodo e de parede por face; vários pavimentos; escadas; andar em primeira pessoa no 3D; modelos prontos; PWA (offline/instalável) |
+| **v1.0** | Objetos soltos (móveis, louças, eletrodomésticos) com girar/espelhar/encostar na parede; bibliotecas de banheiro, cozinha, móveis e eletrodomésticos; **pisos por cômodo (seção 11.1)**; **painéis e divisórias (seção 11.2)**; agrupar; imagem de fundo para decalcar (com calibração de escala); PDF em escala (1:50, 1:100) com carimbo |
+| **v1.x** | Cor/textura de parede por face; rodapé; mais pisos (pedra, cimento queimado, carpete); vários pavimentos; escadas; andar em primeira pessoa no 3D; modelos prontos; PWA (offline/instalável) |
 | **v2** | Telhado; paredes curvas; pilares e vigas; área externa; iluminação e sol; importar modelos 3D (glTF); exportar SVG/DXF |
 | Fora do escopo (exige servidor) | Contas, projetos na nuvem, compartilhamento por link, colaboração, recursos de IA |
+
+O primeiro release público foi a **v0.1.0** (MVP + móveis, cobogó, eletrodomésticos e gabinetes). A v1.0 fica para quando a lista acima estiver completa e o teste externo tiver passado.
+
+### 11.1 Pisos
+
+Cada cômodo pode receber um piso, escolhido numa nova categoria da biblioteca, **Pisos**, ou no painel do cômodo.
+
+**Tipos mínimos**
+
+| Piso | Padrões | Medidas comuns de peça (cm) | Na planta |
+|---|---|---|---|
+| **Parquet / taco de madeira** | Espinha de peixe, tabuleiro (xadrez), réguas paralelas | Tacos de 7 × 35 e 10 × 40; réguas de 15 a 20 de largura | Desenho das peças no padrão escolhido |
+| **Vinílico** | Réguas (amadeirado) e placas | Réguas de 18 × 120 e 20 × 150; placas de 60 × 60 | Réguas em linhas desencontradas |
+| **Cerâmica / porcelanato** | Grade alinhada, juntas desencontradas, diagonal | 45 × 45, 60 × 60, 60 × 120, 90 × 90; revestimento de banheiro 30 × 60 | Grade das placas com a junta |
+
+**Comportamento**
+- O piso é uma propriedade do cômodo, guardada como os nomes (`roomLabels`): preso a um ponto dentro dele, para continuar valendo quando as paredes mudam.
+- **Parâmetros:** tipo, padrão, tamanho da peça, largura da junta, cor (algumas por tipo) e rotação do padrão (0°, 45°, 90°).
+- **Planta 2D:** o desenho das peças aparece só a partir de certo zoom; de longe, o cômodo mostra apenas a cor do piso, para a planta não ficar carregada. Camada própria ("Pisos") para mostrar ou ocultar.
+- **3D:** textura gerada a partir do mesmo desenho (sem imagens externas), com a escala real das peças.
+- **Quantitativos (painel Áreas e tabela copiada):** m² de cada piso, m² com perda (10% padrão; 15% na diagonal e na espinha de peixe) e estimativa de peças. Lista por cômodo e total por tipo, para orçamento.
+- **Exportar PNG:** opção de incluir os pisos.
+
+**Fora desta etapa:** paginação a partir de um ponto escolhido, rodapé (fica na v1.x) e pisos diferentes em partes do mesmo cômodo.
+
+### 11.2 Painéis e divisórias
+
+**O problema.** Hoje toda parede é de alvenaria e divide cômodos. Uma parede falsa de gesso de 4,5 cm, feita para esconder os cabos da TV, fecha com a parede de trás uma faixa estreita que vira um "cômodo" próprio, com nome e área, e tira essa faixa do cômodo de verdade.
+
+**A solução: cada parede passa a ter um tipo.**
+
+| Tipo | Exemplos | Espessuras comuns (cm) | Divide cômodos? |
+|---|---|---|---|
+| **Alvenaria** (o atual) | Tijolo, bloco | 15, 20, 25 | Sim |
+| **Divisória** | Drywall (gesso acartonado) do piso ao teto | 7,5, 9,5, 12 | Sim: separa dois cômodos como uma parede |
+| **Painel** | Parede falsa de gesso, painel de TV, nicho, meia-parede | 2 a 10 (padrão 4,5) | **Não** |
+
+**Regras do painel**
+- **Não forma cômodo:** é ignorado na detecção de cômodos, mesmo quando fecha um contorno com outras paredes. A faixa atrás dele continua fazendo parte do cômodo em volta, e não aparece nome nem área para ela.
+- **Desconta do cômodo:** a área que o painel ocupa no piso sai da área útil do cômodo onde ele está, como já acontece com uma parede solta. O vão entre o painel e a parede de trás continua sendo área do cômodo.
+- **Não conta como superfície de parede para pintura:** aparece em linha própria nos quantitativos, como "Painéis: m² e metros lineares", para orçar gesso ou marcenaria à parte.
+- **Altura própria:** do piso ao teto ou parcial (meia-parede, painel de TV até 2,20 m).
+- **Encaixe:** liga-se às paredes nos cantos, com o mesmo snap e a mesma esquadria, e aceita portas e nichos como as outras paredes.
+
+**Como criar e editar**
+- A ferramenta Parede ganha um seletor de tipo (Alvenaria / Divisória / Painel), lembrado para as próximas paredes.
+- No painel de propriedades, o campo "Tipo" converte uma parede existente. Selecionar várias paredes converte todas de uma vez.
+- Espessura e altura padrão mudam junto com o tipo (painel: 4,5 cm; divisória: 9,5 cm), e continuam editáveis.
+
+**Aparência**
+- **Planta:** alvenaria continua cheia e escura; a divisória fica com preenchimento mais claro; o painel tem contorno fino com hachura leve, para não ser confundido com parede estrutural.
+- **3D:** material de gesso branco (divisória e painel de gesso) ou madeira (painel de TV), na altura definida.
+
+**Arquivo:** o tipo é um campo novo da parede (`kind`), opcional. Projetos antigos abrem com todas as paredes como alvenaria, sem migração.
 
 ---
 
