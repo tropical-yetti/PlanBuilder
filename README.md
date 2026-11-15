@@ -87,6 +87,16 @@ O site é publicado no GitHub Pages pelo workflow `.github/workflows/deploy.yml`
 
 Configuração feita uma única vez no GitHub: Settings → Pages → Build and deployment → Source: **GitHub Actions**.
 
+## Versões
+
+A versão fica no `package.json` e aparece no app (ao lado do nome, no alto da tela, e na lista de atalhos). Cada release ganha uma tag `vX.Y.Z` na `main`.
+
+| Versão | O que trouxe |
+|---|---|
+| 0.1.0 | Primeira versão pública (MVP) |
+
+Para a próxima versão: atualize o `package.json` com `npm version X.Y.Z --no-git-tag-version` num PR para a `dev`, faça o release (`dev` → `main`) e crie a tag `vX.Y.Z` no commit do release.
+
 ## Fluxo de branches
 
 | Branch | Função |
