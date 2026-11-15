@@ -209,3 +209,34 @@ test.describe('produtividade', () => {
     await expect(page.getByRole('dialog', { name: 'Atalhos de teclado' })).toBeHidden()
   })
 })
+
+test('arrastar com Ctrl ou Shift trava a direção e não muda ângulos', async ({ page }) => {
+  await openApp(page)
+  await drawRoom(page, -200, -150, '400x300')
+  const w = await world(page)
+  // parede interna: divide a parede de cima em dois trechos
+  await page.keyboard.press('w')
+  await w.click(50, -150)
+  await w.click(50, 150)
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('v')
+
+  // arrasta o trecho da esquerda da parede de cima para cima, segurando Ctrl só depois do clique
+  await w.move(-100, -150)
+  await page.mouse.down()
+  await w.move(-95, -170)
+  await page.keyboard.down('Control')
+  await w.move(-80, -200)
+  await page.mouse.up()
+  await page.keyboard.up('Control')
+
+  const p = (await savedProject(page)) as unknown as { walls: Record<string, { a: string; b: string }>; nodes: Record<string, { x: number; y: number }> }
+  // todas as paredes continuam horizontais ou verticais
+  for (const wall of Object.values(p.walls)) {
+    const a = p.nodes[wall.a]!
+    const b = p.nodes[wall.b]!
+    expect(a.x === b.x || a.y === b.y).toBe(true)
+  }
+  // e a parede de cima inteira subiu 50 cm
+  expect(Object.values(p.nodes).filter((n) => n.y === -200)).toHaveLength(3)
+})

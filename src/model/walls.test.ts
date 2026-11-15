@@ -12,6 +12,8 @@ import {
   mergeWalls,
   nodePos,
   parallelMovePositions,
+  collinearRun,
+  runMovePositions,
   setNodePositions,
   setWallLengthPositions,
   splitWall,
@@ -232,5 +234,26 @@ describe('mover', () => {
     setNodePositions(p, { [n]: P(0, 0) })
     connectMovedNodes(p, [n])
     expect(segments(p)).toEqual(['0,0-100,100'])
+  })
+})
+
+describe('mover a linha reta inteira', () => {
+  it('encontra os trechos alinhados e ignora as paredes que chegam em T', () => {
+    const p = emptyProject()
+    drawRectRoom(p, P(0, 0), P(400, 300))
+    drawWallSegment(p, P(250, 0), P(250, 300))
+    const [w] = Object.values(p.walls).filter((x) => nodePos(p, x.a).y === 0 && nodePos(p, x.b).y === 0)
+    expect(collinearRun(p, w!.id)).toHaveLength(2)
+  })
+
+  it('paredes que chegam inclinadas esticam na própria direção (o ângulo não muda)', () => {
+    const p = emptyProject()
+    const [top] = drawWallSegment(p, P(0, 0), P(400, 0)).wallIds
+    drawWallSegment(p, P(0, 0), P(-100, 200)) // inclinada para a esquerda
+    drawWallSegment(p, P(400, 0), P(400, 200))
+    const sign = nodePos(p, p.walls[top!]!.b).x > nodePos(p, p.walls[top!]!.a).x ? 1 : -1
+    setNodePositions(p, runMovePositions(p, top!, 100 * sign)) // desce 100 cm
+    // a inclinada continua na mesma reta: de (0,0) para (−100,200) passa por (−50,100)
+    expect(segments(p)).toEqual(['-100,200--50,100', '-50,100-400,100', '400,100-400,200'])
   })
 })
