@@ -21,6 +21,8 @@ export interface Layers {
   items: boolean
   /** Nomes e áreas dos cômodos. */
   roomLabels: boolean
+  /** Pisos aplicados aos cômodos. */
+  floors: boolean
 }
 
 export const LAYER_LABELS: Record<keyof Layers, string> = {
@@ -31,9 +33,10 @@ export const LAYER_LABELS: Record<keyof Layers, string> = {
   openings: 'Portas, janelas e cobogós',
   items: 'Móveis',
   roomLabels: 'Nomes e áreas dos cômodos',
+  floors: 'Pisos',
 }
 
-export const DEFAULT_LAYERS: Layers = { grid: true, autoDimensions: true, dimensions: true, texts: true, openings: true, items: true, roomLabels: true }
+export const DEFAULT_LAYERS: Layers = { grid: true, autoDimensions: true, dimensions: true, texts: true, openings: true, items: true, roomLabels: true, floors: true }
 
 /** Objeto (ou lugar) em que o menu de contexto foi aberto. */
 export interface ContextTarget {
@@ -97,6 +100,8 @@ export interface EditorState {
   view: View2D
   /** Ids selecionados (paredes, por enquanto; depois aberturas, cotas, textos). */
   selection: Id[]
+  /** Cômodo selecionado (clique dentro dele, fora de objetos): mostra nome, áreas e piso no painel. */
+  selectedRoom: string | null
   /** Chave do cômodo cujo nome está sendo editado sobre a planta. */
   renamingRoom: string | null
   layers: Layers
@@ -119,7 +124,10 @@ export interface EditorState {
   setView: (view: View2D) => void
   /** Zoom mantendo fixo o ponto da tela `anchor`. */
   zoomAt: (anchor: Point, factor: number) => void
+  /** Seleciona objetos; desfaz a seleção de cômodo. */
   setSelection: (ids: Id[]) => void
+  /** Seleciona um cômodo; desfaz a seleção de objetos. */
+  setSelectedRoom: (key: string | null) => void
   setCanvasSize: (size: { width: number; height: number }) => void
   setRenamingRoom: (key: string | null) => void
   toggleLayer: (layer: keyof Layers) => void
@@ -140,6 +148,7 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
   sidePanelTab: 'properties',
   view: { x: 0, y: 0, scale: 1 },
   selection: [],
+  selectedRoom: null,
   canvasSize: { width: 0, height: 0 },
   renamingRoom: null,
   layers: { ...DEFAULT_LAYERS },
@@ -162,7 +171,8 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
     const k = scale / v.scale
     set({ view: { scale, x: anchor.x - (anchor.x - v.x) * k, y: anchor.y - (anchor.y - v.y) * k } })
   },
-  setSelection: (selection) => set({ selection }),
+  setSelection: (selection) => set({ selection, selectedRoom: null }),
+  setSelectedRoom: (selectedRoom) => set({ selectedRoom, selection: [] }),
   setCanvasSize: (canvasSize) => set({ canvasSize }),
   setRenamingRoom: (renamingRoom) => set({ renamingRoom }),
   toggleLayer: (layer) => set({ layers: { ...get().layers, [layer]: !get().layers[layer] } }),

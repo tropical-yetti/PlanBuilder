@@ -16,8 +16,9 @@ O MVP (fases 0 a 7 da seção 9) está implementado. Do roadmap da seção 11 (v
 - **Gabinetes de cozinha e lavanderia** (categoria "Cozinha e lavanderia"): gabinete de pia, balcão, armários aéreos, gabinete com tanque e armário alto.
 
 - **Tipos de parede** (seção 11.2): alvenaria, divisória e painel.
+- **Pisos por cômodo** (seção 11.1): 8 pisos na biblioteca (madeira, vinílico, cerâmica e porcelanato), 5 paginações, painel do cômodo, planta, 3D, PNG e quantitativos.
 
-Faltam da v1.0: pisos (seção 11.1), louças de banheiro, agrupar, imagem de fundo para decalcar e PDF em escala.
+Faltam da v1.0: louças de banheiro, agrupar, imagem de fundo para decalcar e PDF em escala.
 
 Diferenças em relação ao que este plano previa:
 
@@ -502,6 +503,8 @@ Cada cômodo pode receber um piso, escolhido numa nova categoria da biblioteca, 
 - **3D:** textura gerada a partir do mesmo desenho (sem imagens externas), com a escala real das peças.
 - **Quantitativos (painel Áreas e tabela copiada):** m² de cada piso, m² com perda (10% padrão; 15% na diagonal e na espinha de peixe) e estimativa de peças. Lista por cômodo e total por tipo, para orçamento.
 - **Exportar PNG:** opção de incluir os pisos.
+
+**Como ficou:** o piso é guardado em `floors`, preso a um ponto do cômodo. Cada paginação é descrita por um ladrilho retangular que se repete (`model/floorPattern.ts`); o mesmo ladrilho vira padrão do canvas na planta, miniatura SVG na biblioteca e textura no 3D. Na planta, as peças aparecem quando a menor medida da peça passa de 3 px na tela. Um clique dentro do cômodo (fora dos objetos) seleciona o cômodo e abre o painel com nome, áreas e piso. A rotação oferecida é horizontal/vertical; o giro de 45° fica na paginação diagonal (e na espinha de peixe).
 
 **Fora desta etapa:** paginação a partir de um ponto escolhido, rodapé (fica na v1.x) e pisos diferentes em partes do mesmo cômodo.
 

@@ -3,7 +3,8 @@ import { useInteractionStore } from '../editor2d/interactionStore'
 import { getComponent, getItem } from '../library/registry'
 import { quantities, type Room } from '../model/quantities'
 import { ROOM_NAME_SUGGESTIONS, renameRoom } from '../model/roomNames'
-import { formatArea, formatMeters } from '../model/units'
+import { PATTERN_LABELS } from '../library/floors'
+import { formatArea, formatCmValue, formatMeters } from '../model/units'
 import { useProjectStore } from '../store/projectStore'
 import { areasAsTsv } from './areasTable'
 
@@ -151,6 +152,22 @@ export function AreasPanel() {
           </table>
         )}
       </section>
+
+      {q.floors.length > 0 && (
+        <section>
+          <h3 className="props-subtitle">Pisos</h3>
+          {q.floors.map((f) => (
+            <div key={`${f.componentId}-${f.pattern}-${f.width}-${f.length}`} className="floor-summary">
+              <Row strong label={`${f.name} (${formatCmValue(f.width)} × ${formatCmValue(f.length)})`} value={formatArea(f.area)} title={f.rooms.join(', ')} />
+              <Row
+                label={`Comprar (+${Math.round(f.waste * 100)}% de perda)`}
+                value={`${formatArea(f.areaWithWaste)} · ≈ ${f.pieces} peças`}
+                title={`${PATTERN_LABELS[f.pattern]}: a perda cobre os cortes nas bordas. As peças são estimadas pela área.`}
+              />
+            </div>
+          ))}
+        </section>
+      )}
 
       {q.openingCounts.length > 0 && (
         <section>

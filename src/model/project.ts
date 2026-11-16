@@ -27,5 +27,6 @@ export function createEmptyProject(name = 'Projeto sem título', now = new Date(
     dimensions: {},
     texts: {},
     roomLabels: {},
+    floors: {},
   }
 }

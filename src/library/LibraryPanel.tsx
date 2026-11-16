@@ -2,15 +2,17 @@ import { useState } from 'react'
 import { formatCmValue } from '../model/units'
 import { useEditorStore } from '../store/editorStore'
 import { CATEGORIES, type CategoryId } from './categories'
+import { FloorSwatch } from './FloorSwatch'
+import { FLOORS, searchFloors, type FloorDef } from './floors'
 import { listByCategory, searchComponents } from './registry'
 import { SymbolSvg } from './SymbolSvg'
 import type { LibraryDef } from './types'
 
 /** Agrupa os componentes pelo subgrupo ("Camas", "Mesas"...), mantendo a ordem da lista. */
-function groupsOf(defs: LibraryDef[]): { name: string; defs: LibraryDef[] }[] {
-  const groups: { name: string; defs: LibraryDef[] }[] = []
+function groupsOf(defs: (LibraryDef | FloorDef)[]): { name: string; defs: (LibraryDef | FloorDef)[] }[] {
+  const groups: { name: string; defs: (LibraryDef | FloorDef)[] }[] = []
   for (const d of defs) {
-    const name = d.kind === 'item' ? d.group : ''
+    const name = d.kind === 'item' || d.kind === 'floor' ? d.group : ''
     const g = groups.find((x) => x.name === name)
     if (g) g.defs.push(d)
     else groups.push({ name, defs: [d] })
@@ -19,14 +21,17 @@ function groupsOf(defs: LibraryDef[]): { name: string; defs: LibraryDef[] }[] {
 }
 
 /** Medida padrão no formato brasileiro ("77,8 × 68,1 cm"). */
-function sizeOf(def: LibraryDef): string {
+function sizeOf(def: LibraryDef | FloorDef): string {
   const f = formatCmValue
+  if (def.kind === 'floor') return `peça ${f(def.defaults.width)} × ${f(def.defaults.length)} cm`
   if (def.kind === 'opening') return `${f(def.defaults.width)} × ${f(def.defaults.height)} cm`
   if (def.round) return `⌀ ${f(def.defaults.width)} cm`
   return `${f(def.defaults.width)} × ${f(def.defaults.depth)} cm`
 }
 
-function Card({ def }: { def: LibraryDef }) {
+type AnyDef = LibraryDef | FloorDef
+
+function Card({ def }: { def: AnyDef }) {
   const placing = useEditorStore((s) => s.placing)
   const startPlacing = useEditorStore((s) => s.startPlacing)
   const setTool = useEditorStore((s) => s.setTool)
@@ -35,7 +40,7 @@ function Card({ def }: { def: LibraryDef }) {
     <button
       type="button"
       className={`lib-card ${active ? 'active' : ''}`}
-      title={`${def.name} — ${def.kind === 'item' ? 'clique e depois clique na planta' : 'clique e depois clique na parede'}, ou arraste para a planta`}
+      title={`${def.name} — ${def.kind === 'floor' ? 'clique e depois clique no cômodo' : def.kind === 'item' ? 'clique e depois clique na planta' : 'clique e depois clique na parede'}, ou arraste para a planta`}
       aria-pressed={active}
       draggable
       onClick={() => (active ? setTool('select') : startPlacing(def.id))}
@@ -49,7 +54,7 @@ function Card({ def }: { def: LibraryDef }) {
         if (useEditorStore.getState().tool === 'place') setTool('select')
       }}
     >
-      <SymbolSvg def={def} size={64} />
+      {def.kind === 'floor' ? <FloorSwatch floor={{ componentId: def.id, ...def.defaults, rotation: 0 }} size={56} /> : <SymbolSvg def={def} size={64} />}
       <span className="lib-name">{def.name}</span>
       <span className="lib-size">
         {sizeOf(def)}
@@ -62,7 +67,7 @@ export function LibraryPanel() {
   const [query, setQuery] = useState('')
   const [closed, setClosed] = useState<Set<CategoryId>>(new Set())
   const searching = query.trim() !== ''
-  const results = searching ? searchComponents(query) : []
+  const results: AnyDef[] = searching ? [...searchComponents(query), ...searchFloors(query)] : []
 
   const toggle = (id: CategoryId) =>
     setClosed((prev) => {
@@ -96,7 +101,7 @@ export function LibraryPanel() {
         )
       ) : (
         CATEGORIES.map((c) => {
-          const items = listByCategory(c.id)
+          const items: AnyDef[] = c.id === 'floors' ? FLOORS : listByCategory(c.id)
           const open = c.available && !closed.has(c.id)
           return (
             <div key={c.id} className="lib-category">

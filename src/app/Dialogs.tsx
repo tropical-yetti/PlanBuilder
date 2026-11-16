@@ -251,9 +251,10 @@ function Confirm({ dialog }: { dialog: Extract<Dialog, { kind: 'confirm' }> }) {
 /** Opções lembradas enquanto a página estiver aberta. */
 let lastExport: ExportOptions = DEFAULT_EXPORT
 
-const EXPORT_CHECKS: { key: 'wallLengths' | 'roomLabels' | 'areaTable' | 'grid'; label: string }[] = [
+const EXPORT_CHECKS: { key: 'wallLengths' | 'roomLabels' | 'floors' | 'areaTable' | 'grid'; label: string }[] = [
   { key: 'wallLengths', label: 'Medidas das paredes' },
   { key: 'roomLabels', label: 'Nomes e áreas dos cômodos' },
+  { key: 'floors', label: 'Pisos' },
   { key: 'areaTable', label: 'Quadro de áreas abaixo do desenho' },
   { key: 'grid', label: 'Grade' },
 ]

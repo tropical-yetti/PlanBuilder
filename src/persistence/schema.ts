@@ -5,7 +5,7 @@
  * que converte a versão anterior na nova: assim, arquivos antigos continuam abrindo.
  */
 import { DEFAULT_SETTINGS, newId } from '../model/project'
-import { SCHEMA_VERSION, type Project } from '../model/types'
+import { SCHEMA_VERSION, type Project, type RoomFloor } from '../model/types'
 
 export const FILE_EXTENSION = '.planbuilder.json'
 
@@ -63,6 +63,7 @@ function sanitize(raw: Raw): { project: Project; warnings: string[] } {
     dimensions: {},
     texts: {},
     roomLabels: {},
+    floors: {},
   }
 
   for (const n of records(raw.nodes)) {
@@ -174,6 +175,26 @@ function sanitize(raw: Raw): { project: Project; warnings: string[] } {
 
   for (const l of records(raw.roomLabels)) {
     if (str(l.id) && num(l.x) && num(l.y) && str(l.name)) project.roomLabels[l.id] = { id: l.id, x: l.x, y: l.y, name: l.name }
+  }
+
+  const patterns = new Set(['grid', 'stagger', 'diagonal', 'herringbone', 'basket'])
+  for (const fl of records(raw.floors)) {
+    const ok =
+      str(fl.id) && num(fl.x) && num(fl.y) && str(fl.componentId) && str(fl.pattern) && patterns.has(fl.pattern) &&
+      num(fl.width) && fl.width > 0 && num(fl.length) && fl.length > 0 && str(fl.color) && /^#[0-9a-f]{6}$/i.test(fl.color)
+    if (!ok) continue
+    project.floors[fl.id as string] = {
+      id: fl.id as string,
+      x: fl.x as number,
+      y: fl.y as number,
+      componentId: fl.componentId as string,
+      pattern: fl.pattern as RoomFloor['pattern'],
+      width: fl.width as number,
+      length: fl.length as number,
+      joint: num(fl.joint) && fl.joint >= 0 ? fl.joint : 0,
+      color: fl.color as string,
+      rotation: num(fl.rotation) ? ((fl.rotation % 180) + 180) % 180 : 0,
+    }
   }
   return { project, warnings }
 }

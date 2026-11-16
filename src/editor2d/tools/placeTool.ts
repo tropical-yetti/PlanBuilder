@@ -1,4 +1,7 @@
+import { getFloor, isFloorId } from '../../library/floors'
 import { getComponent, getDef, getItem } from '../../library/registry'
+import { setRoomFloor, specFromDef } from '../../model/floors'
+import { roomAt } from '../../model/quantities'
 import type { ItemDef } from '../../library/types'
 import { addItem, normalizeAngle, snapToWall } from '../../model/items'
 import { angleOf, dot, normalize, perp, projectOnSegment, sub } from '../../model/geometry'
@@ -68,6 +71,7 @@ export function placeItem(
  * - Portas, janelas e cobogós seguem o cursor, grudam na parede mais próxima e abrem para o lado do cursor.
  *   F inverte a dobradiça.
  * - Móveis seguem o cursor; sofás, camas e poltronas encostam o fundo na parede mais próxima. R gira 90°.
+ * - Pisos: o cômodo sob o cursor fica destacado; o clique aplica o piso nele.
  * Clique insere (dá para inserir vários seguidos); Esc sai.
  */
 export function createPlaceTool(): Tool {
@@ -123,18 +127,37 @@ export function createPlaceTool(): Tool {
 
   return {
     cursor: () => {
+      if (isFloorId(editor().placing ?? '')) return ui().highlightRoom ? 'copy' : 'not-allowed'
       const d = ui().draft
       return d?.kind === 'opening' && d.wallId && !d.valid ? 'not-allowed' : 'copy'
     },
 
     onPointerMove(e) {
       last = e
+      if (isFloorId(editor().placing ?? '')) {
+        ui().set({ cursor: e.world, draft: null, highlightRoom: roomAt(project(), e.world)?.key ?? null })
+        return
+      }
       ui().set({ cursor: e.world, draft: compute(e) })
     },
 
     onPointerDown(e) {
       if (e.button !== 0) return
       last = e
+      const floorId = editor().placing ?? ''
+      if (isFloorId(floorId)) {
+        const room = roomAt(project(), e.world)
+        if (!room) {
+          editor().notify('Clique dentro de um cômodo fechado para aplicar o piso.')
+          return
+        }
+        const def = getFloor(floorId)
+        docStore().update('Piso aplicado', (doc) => setRoomFloor(doc, room, specFromDef(def)))
+        // O cômodo fica selecionado: o painel mostra o piso para ajustar paginação, tamanho e cor.
+        const after = roomAt(project(), e.world)
+        if (after) editor().setSelectedRoom(after.key)
+        return
+      }
       const d = compute(e)
       if (!d) return
       let created: Id | null = null
@@ -201,7 +224,7 @@ export function createPlaceTool(): Tool {
       flipHinge = false
       itemRotation = 0
       last = null
-      ui().set({ draft: null })
+      ui().set({ draft: null, highlightRoom: null })
     },
   }
 }

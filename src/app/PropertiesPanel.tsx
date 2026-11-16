@@ -1,17 +1,23 @@
 import { commands } from '../commands/registry'
+import { quantities } from '../model/quantities'
 import { classify } from '../model/selection'
 import { useEditorStore } from '../store/editorStore'
 import { useProjectStore } from '../store/projectStore'
 import { DimensionProperties, TextProperties } from './AnnotationProperties'
 import { ItemProperties } from './ItemProperties'
 import { OpeningProperties } from './OpeningProperties'
+import { RoomProperties } from './RoomProperties'
 import { WallProperties } from './WallProperties'
 
 /** Mostra o painel adequado ao que está selecionado. */
 export function PropertiesPanel() {
   const project = useProjectStore((s) => s.project)
   const selection = useEditorStore((s) => s.selection)
+  const roomKey = useEditorStore((s) => s.selectedRoom)
+  // A chave some se as paredes do cômodo mudarem: aí o painel volta ao normal.
+  const room = roomKey ? quantities(project).rooms.find((r) => r.key === roomKey) : undefined
   const c = classify(project, selection)
+  if (c.count === 0 && room) return <RoomProperties key={room.key} room={room} />
   const kinds = [c.walls, c.openings, c.items, c.texts, c.dimensions].filter((list) => list.length > 0).length
 
   if (kinds <= 1) {
