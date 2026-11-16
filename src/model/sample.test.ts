@@ -23,6 +23,9 @@ describe('projeto de exemplo', () => {
       'appliance.dishwasher-14',
       'appliance.fridge-duplex',
       'appliance.stove-4',
+      'bathroom.shower',
+      'bathroom.toilet-tank',
+      'bathroom.vanity',
       'furniture.armchair',
       'furniture.bed-double',
       'furniture.sofa-3',
@@ -33,6 +36,9 @@ describe('projeto de exemplo', () => {
     // o sofá encostou na parede da esquerda, de frente para a sala
     expect(Object.values(p.items).find((it) => it.componentId === 'furniture.sofa-3')).toMatchObject({ x: 52.5, rotation: 270 })
     expect(quantities(p).cobogo.area).toBe(200 * 50)
+    // no banheiro, a bacia encostou na parede da esquerda e o gabinete na de baixo
+    expect(Object.values(p.items).find((it) => it.componentId === 'bathroom.toilet-tank')).toMatchObject({ x: 7.5 + 32.5, rotation: 270 })
+    expect(Object.values(p.items).find((it) => it.componentId === 'bathroom.vanity')).toMatchObject({ y: 592.5 - 22.5, rotation: 180 })
   })
 
   it('todas as aberturas estão em posição válida', () => {

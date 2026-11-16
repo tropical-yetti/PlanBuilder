@@ -12,6 +12,7 @@ Editor web de plantas baixas em 2D com visualização 3D. Roda inteiramente no n
 - **Móveis:** sofás de 2 e 3 lugares, poltrona, mesas quadrada, retangular e redonda (com cadeiras) e camas em todos os tamanhos padrão (solteiro, solteirão, viúva, casal, queen e king). Sofás, camas e poltronas encostam sozinhos na parede.
 - **Gabinetes de cozinha e lavanderia:** gabinete de pia (cuba simples ou dupla), balcão, armários aéreos (com a altura do piso editável); na lavanderia, gabinete com tanque, gabinete suspenso com tanque, balcão, gabinete com nicho para máquina e armário alto.
 - **Eletrodomésticos** com medidas de modelos Brastemp: fogões de 4, 5 e 6 bocas, geladeiras duplex, inverse e side inverse, máquina de lavar (abertura superior), lava e seca (abertura frontal) e lava-louças de 8, 10 e 14 serviços. Encostam na parede; o giro das portas aparece tracejado.
+- **Banheiro:** bacia com caixa acoplada, bacia suspensa, bidê, lavatório de coluna, gabinete com cuba (uma ou duas cubas), box de chuveiro (vidro frontal ou de canto) e banheira, com medidas de mercado.
 - **Pisos por cômodo:** taco (espinha de peixe e tabuleiro), assoalho de réguas, vinílico (réguas e placas), porcelanato e cerâmica (reta, desencontrada e diagonal). Tamanho da peça, junta, cor e direção editáveis; aparecem na planta, no 3D e no PNG, com área para compra (com perda) e estimativa de peças.
 - **Áreas:** cômodos detectados automaticamente, área total, área útil, superfície de paredes (descontando vãos) e perímetros.
 - **Vista 3D:** gerada da planta, lado a lado ou em tela cheia.

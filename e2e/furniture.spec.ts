@@ -131,7 +131,7 @@ test('gabinetes de cozinha e lavanderia e lava-louças', async ({ page }) => {
   await place('Gabinete de pia', -100, -110)
   await expect(page.locator('.props-title')).toHaveText('Gabinete de pia')
   await page.getByRole('button', { name: '150 cm', exact: true }).click()
-  await page.locator('.field:has-text("Cuba") select').selectOption('2')
+  await page.getByRole('combobox', { name: 'Cuba', exact: true }).selectOption('2')
 
   // Armário aéreo acima, a 150 cm do piso; a altura do piso é editável
   await place('Armário aéreo', -100, -130)
@@ -156,4 +156,32 @@ test('gabinetes de cozinha e lavanderia e lava-louças', async ({ page }) => {
 
   await page.getByRole('radio', { name: 'Dividido' }).click()
   await expect(page.locator('[data-testid=scene3d]')).toHaveAttribute('data-ready', 'true', { timeout: 30_000 })
+})
+
+test('banheiro: bacia encosta na parede, gabinete com duas cubas e box de canto', async ({ page }) => {
+  await openApp(page)
+  await drawRoom(page, -200, -150, '400x300')
+  const w = await world(page)
+
+  await page.locator('.lib-card', { hasText: 'Bacia com caixa acoplada' }).click()
+  await w.click(-170, 0)
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.props-title')).toHaveText('Bacia com caixa acoplada')
+
+  await page.locator('.lib-card', { hasText: 'Gabinete com cuba' }).click()
+  await w.click(0, 120)
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: '120 cm', exact: true }).click()
+  await page.getByRole('combobox', { name: 'Cuba', exact: true }).selectOption('2')
+
+  await page.locator('.lib-card', { hasText: 'Box de chuveiro' }).click()
+  await w.click(130, -100)
+  await page.keyboard.press('Escape')
+  await page.getByRole('combobox', { name: 'Vidro', exact: true }).selectOption('corner')
+
+  const items = Object.values(((await savedProject(page)) as unknown as { items: Record<string, SavedItem & { params: Record<string, unknown> }> }).items)
+  // fundo da bacia na face da parede da esquerda (x = −200 + 7,5), virada para dentro
+  expect(items.find((it) => it.componentId === 'bathroom.toilet-tank')).toMatchObject({ x: -200 + 7.5 + 32.5, rotation: 270 })
+  expect(items.find((it) => it.componentId === 'bathroom.vanity')).toMatchObject({ width: 120, params: { basins: 2 } })
+  expect(items.find((it) => it.componentId === 'bathroom.shower')).toMatchObject({ params: { layout: 'corner' } })
 })

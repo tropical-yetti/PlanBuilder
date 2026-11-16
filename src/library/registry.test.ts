@@ -111,6 +111,20 @@ describe('biblioteca', () => {
     expect(getItem('kitchen.wall-cabinet').symbol({ width: 80, depth: 35, params: {} }).every((p) => p.t === 'line' && p.dash)).toBe(true)
   })
 
+  it('banheiro: cubas, vidro do box e busca', () => {
+    const vanity = getItem('bathroom.vanity')
+    const basins = (width: number) =>
+      vanity.symbol({ width, depth: 45, params: { basins: 2 } }).filter((p) => p.t === 'line' && p.closed && p.fill === 'soft').length
+    expect(basins(120)).toBe(2)
+    expect(basins(80)).toBe(1) // gabinete estreito não comporta duas cubas
+    const shower = getItem('bathroom.shower')
+    const glass = (layout: string) => shower.model({ width: 90, depth: 90, height: 190, params: { layout } }).filter((b) => b.mat === 'glass').length
+    expect(glass('front')).toBe(1)
+    expect(glass('corner')).toBe(2)
+    expect(searchComponents('vaso').map((c) => c.id)).toEqual(['bathroom.toilet-tank', 'bathroom.toilet-wall-hung'])
+    expect(getItem('bathroom.toilet-tank').defaults).toMatchObject({ width: 37, depth: 65 })
+  })
+
   it('fogões: uma boca por posição, todas dentro do fogão', () => {
     for (const [id, count] of [
       ['appliance.stove-4', 4],
@@ -161,8 +175,8 @@ describe('biblioteca', () => {
 
   it('todo móvel é coerente com o contrato', () => {
     for (const c of items) {
-      expect(['furniture', 'appliances', 'kitchen'], c.id).toContain(c.category)
-      const prefixes = { furniture: ['furniture.'], appliances: ['appliance.'], kitchen: ['kitchen.', 'laundry.'] }[c.category as 'furniture']
+      expect(['furniture', 'appliances', 'kitchen', 'bathroom'], c.id).toContain(c.category)
+      const prefixes = { furniture: ['furniture.'], appliances: ['appliance.'], kitchen: ['kitchen.', 'laundry.'], bathroom: ['bathroom.'] }[c.category as 'furniture']
       expect(prefixes.some((pre) => c.id.startsWith(pre)), c.id).toBe(true)
       const { width, depth, height } = c.defaults
       expect(width >= c.limits.minWidth && width <= c.limits.maxWidth, c.id).toBe(true)
@@ -239,7 +253,8 @@ describe('biblioteca', () => {
     expect(ids(searchComponents('geladeira'))).toHaveLength(3)
     expect(ids(searchComponents('fogao 5 bocas'))).toEqual(['appliance.stove-5'])
     expect(ids(searchComponents('lavar roupa'))).toEqual(['appliance.washer-top', 'appliance.washer-front'])
-    expect(ids(searchComponents('pia'))).toEqual(['kitchen.sink-cabinet'])
+    expect(ids(searchComponents('pia cozinha'))).toEqual(['kitchen.sink-cabinet'])
+    expect(ids(searchComponents('pia banheiro'))).toEqual(['bathroom.pedestal-sink', 'bathroom.vanity'])
     expect(ids(searchComponents('eletrodomesticos'))).toHaveLength(11)
     expect(ids(searchComponents('lava louças'))).toEqual(['appliance.dishwasher-8', 'appliance.dishwasher-10', 'appliance.dishwasher-14'])
     expect(ids(searchComponents('tanque'))).toEqual(['laundry.tank-cabinet', 'laundry.tank-suspended'])

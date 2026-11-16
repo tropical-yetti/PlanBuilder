@@ -3,6 +3,7 @@ import { dishwasher10, dishwasher14, dishwasher8 } from './components/appliances
 import { fridgeDuplex, fridgeInverse, fridgeSide } from './components/appliances/fridges'
 import { stove4, stove5, stove6 } from './components/appliances/stoves'
 import { washerFront, washerTop } from './components/appliances/washers'
+import { BATHROOM } from './components/bathroom/fixtures'
 import { cobogoBand } from './components/cobogo/band'
 import { cobogoPanel } from './components/cobogo/panel'
 import { doorFolding } from './components/doors/folding'
@@ -70,6 +71,7 @@ export const COMPONENTS: LibraryDef[] = [
   dishwasher8,
   dishwasher10,
   dishwasher14,
+  ...BATHROOM,
 ]
 
 const byId = new Map<string, LibraryDef>(COMPONENTS.map((c) => [c.id, c]))
