@@ -3,7 +3,8 @@ import { add, angleOf, dist, midpoint, normalize, perp, scale, sub } from '../..
 import { getItem } from '../../library/registry'
 import { distancesToEnds } from '../../model/openings'
 import { formatCm, formatMeters } from '../../model/units'
-import { wallEnds } from '../../model/walls'
+import { defaultThickness, wallEnds } from '../../model/walls'
+import { useEditorStore } from '../../store/editorStore'
 import type { WallPolygon } from '../../model/wallGeometry'
 import type { Id, Point, Project } from '../../model/types'
 import type { InteractionState } from '../interactionStore'
@@ -197,7 +198,8 @@ function EndDistances({
 
 export function OverlayLayer({ project, polygons, pxPerCm: k, selected, interaction, showNodeHandles, showWallLengths }: Props) {
   const { snap, draft, typed, box, hover } = interaction
-  const thickness = project.settings.defaultWallThickness
+  // a prévia do desenho usa a espessura do tipo de parede escolhido
+  const thickness = defaultThickness(project, useEditorStore((s) => s.wallKind))
 
   // Nós com alça: os das paredes selecionadas e o nó sob o cursor.
   const handleNodes = new Set<Id>()

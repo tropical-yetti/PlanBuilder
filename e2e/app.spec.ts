@@ -240,3 +240,37 @@ test('arrastar com Ctrl ou Shift trava a direção e não muda ângulos', async 
   // e a parede de cima inteira subiu 50 cm
   expect(Object.values(p.nodes).filter((n) => n.y === -200)).toHaveLength(3)
 })
+
+test('painel de gesso junto à parede não vira cômodo; divisória divide', async ({ page }) => {
+  await openApp(page)
+  await drawRoom(page, -200, -150, '400x300')
+  const w = await world(page)
+
+  // painel de TV de 4,5 cm, com um vão para os cabos atrás
+  await page.keyboard.press('w')
+  await page.locator('.tool-options').getByRole('radio', { name: 'Painel' }).click()
+  await w.click(-180, -50)
+  await w.click(-180, 50)
+  await page.keyboard.press('Escape')
+  await page.getByRole('tab', { name: 'Áreas' }).click()
+  await expect(page.getByText('Cômodos (1)')).toBeVisible()
+  await expect(page.locator('.area-row', { hasText: 'Painel' })).toContainText('1,00 m')
+
+  // divisória de drywall no meio: aí sim são dois cômodos
+  await page.locator('.tool-options').getByRole('radio', { name: 'Divisória' }).click()
+  await w.click(50, -150)
+  await w.click(50, 150)
+  await page.keyboard.press('Escape')
+  await expect(page.getByText('Cômodos (2)')).toBeVisible()
+
+  // converter a divisória em painel pelo painel de propriedades: volta a ser um cômodo só
+  await page.keyboard.press('v')
+  await page.getByRole('tab', { name: 'Propriedades' }).click()
+  await w.click(50, 0)
+  await expect(page.locator('.props-title')).toHaveText('Divisória')
+  await page.locator('.props').getByRole('radio', { name: 'Painel' }).click()
+  await expect(page.locator('.props-title')).toHaveText('Painel')
+  await expect(page.locator('.field:has-text("Espessura") input')).toHaveValue('4,5')
+  await page.getByRole('tab', { name: 'Áreas' }).click()
+  await expect(page.getByText('Cômodos (1)')).toBeVisible()
+})

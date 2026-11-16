@@ -4,10 +4,13 @@
  * Em cada nó, as paredes que saem dele são ordenadas pelo ângulo. Entre duas paredes vizinhas
  * nessa ordem, a borda de uma encontra a borda da outra: esse ponto de encontro é o canto comum.
  * Assim, cantos em L, T e X ficam fechados e sem sobreposição visível.
+ *
+ * Quando paredes de tipos diferentes se encontram, a de maior prioridade (alvenaria > divisória > painel)
+ * segue contínua, como na obra: a divisória ou o painel termina na face dela, sem entrar na parede.
  */
 
 import { add, angleOf, dist, lineIntersection, normalize, perp, scale, sub } from './geometry'
-import type { Id, Point, Project, Wall } from './types'
+import type { Id, Point, Project, Wall, WallKind } from './types'
 
 export interface WallPolygon {
   wallId: Id
@@ -22,7 +25,12 @@ export interface WallPolygon {
 interface NodeCorner {
   left: Point
   right: Point
+  /** A parede termina na face de outra de maior prioridade: a ponta é reta, sem o vértice do nó. */
+  flat?: boolean
 }
+
+const PRIORITY: Record<WallKind, number> = { masonry: 3, partition: 2, panel: 1 }
+const priorityOf = (w: Wall) => PRIORITY[w.kind ?? 'masonry']
 
 /** Limite de esquadria: cantos muito agudos são cortados para não gerar pontas enormes. */
 const MITER_LIMIT = 4
@@ -68,10 +76,32 @@ function computeCorners(p: Project): Map<string, NodeCorner> {
     const result = new Map<Id, NodeCorner>()
     for (const it of items) result.set(it.w.id, { left: it.leftBase, right: it.rightBase })
 
-    if (items.length > 1) {
-      for (let i = 0; i < items.length; i++) {
-        const cur = items[i]!
-        const next = items[(i + 1) % items.length]!
+    // Só as paredes de maior prioridade no nó se encontram em esquadria entre si.
+    const top = Math.max(...items.map((it) => priorityOf(it.w)))
+    const main = items.filter((it) => priorityOf(it.w) === top)
+    const minor = items.filter((it) => priorityOf(it.w) !== top)
+
+    // As de menor prioridade param na face mais próxima das principais (a primeira que a lateral cruza).
+    for (const it of minor) {
+      const cut = (base: Point): Point | null => {
+        let best: { t: number; point: Point } | null = null
+        for (const m of main) {
+          for (const face of [m.leftBase, m.rightBase]) {
+            const hit = lineIntersection(base, it.d, face, m.d)
+            if (hit && hit.t > -1e-9 && hit.t <= MITER_LIMIT * Math.max(it.h, m.h) && (!best || hit.t < best.t)) best = { t: hit.t, point: hit.point }
+          }
+        }
+        return best?.point ?? null
+      }
+      const left = cut(it.leftBase)
+      const right = cut(it.rightBase)
+      if (left && right) result.set(it.w.id, { left, right, flat: true })
+    }
+
+    if (main.length > 1) {
+      for (let i = 0; i < main.length; i++) {
+        const cur = main[i]!
+        const next = main[(i + 1) % main.length]!
         // Girando no sentido do ângulo crescente, o lado "esquerdo" de `cur` encara o lado "direito" de `next`.
         const hit = lineIntersection(cur.leftBase, cur.d, next.rightBase, next.d)
         const limit = MITER_LIMIT * Math.max(cur.h, next.h)
@@ -113,7 +143,10 @@ export function wallPolygons(p: Project): Map<Id, WallPolygon> {
     // espessuras diferentes) os cantos não são simétricos, e sem o nó sobraria um buraco no encontro.
     const a = { x: A.x, y: A.y }
     const b = { x: B.x, y: B.y }
-    polys.set(w.id, { wallId: w.id, a, b, points: [ca.left, cb.right, b, cb.left, ca.right, a] })
+    // Ponta reta (parede que termina na face de outra): no lugar do nó, o meio da ponta, para não entrar na outra parede.
+    const endA = ca.flat ? { x: (ca.left.x + ca.right.x) / 2, y: (ca.left.y + ca.right.y) / 2 } : a
+    const endB = cb.flat ? { x: (cb.left.x + cb.right.x) / 2, y: (cb.left.y + cb.right.y) / 2 } : b
+    polys.set(w.id, { wallId: w.id, a, b, points: [ca.left, cb.right, endB, cb.left, ca.right, endA] })
   }
 
   if (!byWalls) {

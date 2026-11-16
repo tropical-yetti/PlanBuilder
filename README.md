@@ -6,6 +6,7 @@ Editor web de plantas baixas em 2D com visualização 3D. Roda inteiramente no n
 
 ## O que o app faz
 
+- **Tipos de parede:** alvenaria, divisória (drywall, divide cômodos) e painel (parede falsa de gesso, painel de TV, meia-parede: não forma cômodo, só desconta a área que ocupa).
 - **Planta 2D:** paredes com medida digitada, cômodos retangulares, cantos sempre fechados, ajudas de precisão (pontas, meio, ângulos, alinhamento, grade).
 - **Portas, janelas e cobogós:** 5 portas (giro simples e dupla, correr, sanfonada e vão livre), 4 janelas e 2 tipos de cobogó (painel e faixa), presos à parede, com medidas editáveis e estimativa de peças de cobogó.
 - **Móveis:** sofás de 2 e 3 lugares, poltrona, mesas quadrada, retangular e redonda (com cadeiras) e camas em todos os tamanhos padrão (solteiro, solteirão, viúva, casal, queen e king). Sofás, camas e poltronas encostam sozinhos na parede.
@@ -24,6 +25,7 @@ Tudo roda no navegador; nenhum dado sai do seu computador.
 |---|---|
 | Criar um cômodo | `A`, clique num canto, digite `400x300` e `Enter` (ou arraste) |
 | Desenhar parede por parede | `W`, clique em cada canto; digite o comprimento + `Enter`; `Esc` encerra |
+| Desenhar divisória ou painel de gesso | Com `W` ou `A` ativo, escolha "Divisória" ou "Painel" no alto da planta; para converter uma parede existente, use o campo "Tipo" no painel |
 | Inserir porta, janela ou cobogó | Clique no item da biblioteca e depois na parede (ou arraste) |
 | Inserir móvel | Clique no item da biblioteca e depois na planta; perto de uma parede ele encosta; `R` gira |
 | Selecionar e mover | `V`; arraste a parede, o canto, a porta ou o móvel |

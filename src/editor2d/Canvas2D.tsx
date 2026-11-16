@@ -15,6 +15,7 @@ import { OverlayLayer } from './layers/OverlayLayer'
 import { RoomLayer } from './layers/RoomLayer'
 import { RoomNameEditor } from './RoomNameEditor'
 import { TextEditor } from './TextEditor'
+import { ToolOptions } from './ToolOptions'
 import { WallLayer } from './layers/WallLayer'
 import { C } from './theme'
 import { activeTool, tools } from './tools'
@@ -55,6 +56,10 @@ export function Canvas2D() {
   const selected = useMemo(
     () => new Set(selection.filter((id) => project.walls[id] || project.openings[id] || project.items[id] || project.texts[id] || project.dimensions[id])),
     [selection, project.walls, project.openings, project.items, project.texts, project.dimensions],
+  )
+  const wallKinds = useMemo(
+    () => new Map(Object.values(project.walls).flatMap((w) => (w.kind ? [[w.id, w.kind] as const] : []))),
+    [project.walls],
   )
   const lockedWalls = useMemo(() => new Set(Object.values(project.walls).filter((w) => w.locked).map((w) => w.id)), [project.walls])
   const hoveredOpening = hover?.kind === 'opening' ? hover.id : null
@@ -241,7 +246,7 @@ export function Canvas2D() {
           {layers.grid && <GridLayer view={view} width={size.width} height={size.height} />}
           <RoomLayer rooms={rooms} pxPerCm={view.scale} highlighted={highlightRoom} editing={renamingRoom?.key ?? null} showLabels={layers.roomLabels} />
           </Layer>
-          <WallLayer polygons={polygons} selected={selected} hovered={hoveredWall} hoverColor={hoverColor} locked={lockedWalls} />
+          <WallLayer polygons={polygons} selected={selected} hovered={hoveredWall} hoverColor={hoverColor} locked={lockedWalls} kinds={wallKinds} />
           <Layer listening={false}>
           {layers.items && <ItemLayer items={items} pxPerCm={view.scale} colorOf={itemColor} />}
           {layers.openings && <OpeningLayer shapes={openings} pxPerCm={view.scale} />}
@@ -268,6 +273,7 @@ export function Canvas2D() {
           />
         </Stage>
       )}
+      <ToolOptions />
       {renamingRoom && <RoomNameEditor key={renamingRoom.key} room={renamingRoom} />}
       {textEdit && <TextEditor key={`${textEdit.id}-${textEdit.at.x}-${textEdit.at.y}`} edit={textEdit} />}
     </div>

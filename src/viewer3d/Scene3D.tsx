@@ -20,6 +20,8 @@ const COLORS = {
   ground: '#c3ccd6',
   floor: '#f7f3ea',
   wallSide: '#f8fafc',
+  partitionTop: '#9aa4b2',
+  panelTop: '#d7dce3',
   wallTop: '#4b5563',
   wallSelected: '#bfdbfe',
   frame: '#f1f5f9',
@@ -59,7 +61,7 @@ function WallMesh({ piece, selected }: { piece: WallPiece; selected: boolean }) 
     <mesh position={[0, piece.y0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
       <extrudeGeometry args={[shape, { depth: piece.y1 - piece.y0, bevelEnabled: false }]} />
       {/* material 0: tampas (topo escuro, como na planta); material 1: faces laterais */}
-      <meshStandardMaterial attach="material-0" color={COLORS.wallTop} roughness={0.9} />
+      <meshStandardMaterial attach="material-0" color={piece.wallKind === 'panel' ? COLORS.panelTop : piece.wallKind === 'partition' ? COLORS.partitionTop : COLORS.wallTop} roughness={0.9} />
       <meshStandardMaterial attach="material-1" color={selected ? COLORS.wallSelected : COLORS.wallSide} roughness={0.95} />
     </mesh>
   )

@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { quantities } from '../../model/quantities'
 import { counts, emptyProject, segments } from '../../model/testUtils'
 import { drawRectRoom, drawWallSegment } from '../../model/walls'
 import { useEditorStore } from '../../store/editorStore'
@@ -467,5 +468,31 @@ describe('trava de direção ao arrastar (Shift ou Ctrl)', () => {
     expect(doc().project.texts.t).toMatchObject({ x: 100, y: 160 })
     lockedDrag([150, 200], [200, 210])
     expect(doc().project.items.m).toMatchObject({ x: 200, y: 200, rotation: 0 })
+  })
+})
+
+describe('tipo de parede nas ferramentas', () => {
+  afterEach(() => ed().setWallKind('masonry'))
+
+  it('a ferramenta Parede desenha no tipo escolhido, com a espessura dele', () => {
+    doc().update('sala', (d) => void drawRectRoom(d, { x: 0, y: 0 }, { x: 400, y: 300 }))
+    ed().setWallKind('panel')
+    ed().setTool('wall')
+    click('wall', 100, 20)
+    click('wall', 300, 20)
+    key('wall', 'Escape')
+    const panel = Object.values(doc().project.walls).find((w) => w.kind === 'panel')!
+    expect(panel).toMatchObject({ kind: 'panel', thickness: 4.5, height: 280 })
+    // a sala continua um cômodo só
+    expect(quantities(doc().project).rooms).toHaveLength(1)
+  })
+
+  it('o Cômodo retangular em divisória cria divisórias', () => {
+    ed().setWallKind('partition')
+    ed().setTool('room')
+    drag('room', [0, 0], [300, 200])
+    const walls = Object.values(doc().project.walls)
+    expect(walls).toHaveLength(4)
+    expect(walls.every((w) => w.kind === 'partition' && w.thickness === 9.5)).toBe(true)
   })
 })

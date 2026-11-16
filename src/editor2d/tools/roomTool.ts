@@ -1,9 +1,9 @@
 import { dist } from '../../model/geometry'
 import { parseSize } from '../../model/units'
-import { drawRectRoom } from '../../model/walls'
+import { defaultWallProps, drawRectRoom } from '../../model/walls'
 import type { Point } from '../../model/types'
 import { snapPoint } from '../snapping'
-import { docStore, project, pxPerCm, ui } from './context'
+import { docStore, editor, project, pxPerCm, ui } from './context'
 import type { PointerInfo, Tool } from './types'
 
 /**
@@ -31,7 +31,7 @@ export function createRoomTool(): Tool {
       return
     }
     docStore().update('Cômodo criado', (d) => {
-      drawRectRoom(d, from, b)
+      drawRectRoom(d, from, b, defaultWallProps(d, editor().wallKind))
     })
     reset()
   }
