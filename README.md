@@ -12,6 +12,7 @@ Editor web de plantas baixas em 2D com visualização 3D. Roda inteiramente no n
 - **Móveis:** sofás de 2 e 3 lugares, poltrona, mesas quadrada, retangular e redonda (com cadeiras) e camas em todos os tamanhos padrão (solteiro, solteirão, viúva, casal, queen e king). Sofás, camas e poltronas encostam sozinhos na parede.
 - **Gabinetes de cozinha e lavanderia:** gabinete de pia (cuba simples ou dupla), balcão, armários aéreos (com a altura do piso editável); na lavanderia, gabinete com tanque, gabinete suspenso com tanque, balcão, gabinete com nicho para máquina e armário alto.
 - **Eletrodomésticos** com medidas de modelos Brastemp: fogões de 4, 5 e 6 bocas, geladeiras duplex, inverse e side inverse, máquina de lavar (abertura superior), lava e seca (abertura frontal) e lava-louças de 8, 10 e 14 serviços. Encostam na parede; o giro das portas aparece tracejado.
+- **Pisos por cômodo:** taco (espinha de peixe e tabuleiro), assoalho de réguas, vinílico (réguas e placas), porcelanato e cerâmica (reta, desencontrada e diagonal). Tamanho da peça, junta, cor e direção editáveis; aparecem na planta, no 3D e no PNG, com área para compra (com perda) e estimativa de peças.
 - **Áreas:** cômodos detectados automaticamente, área total, área útil, superfície de paredes (descontando vãos) e perímetros.
 - **Vista 3D:** gerada da planta, lado a lado ou em tela cheia.
 - **Produtividade:** copiar e colar, duplicar, girar, espelhar, alinhar, bloquear, camadas, cotas, textos, medir, histórico.
@@ -27,6 +28,8 @@ Tudo roda no navegador; nenhum dado sai do seu computador.
 | Desenhar parede por parede | `W`, clique em cada canto; digite o comprimento + `Enter`; `Esc` encerra |
 | Desenhar divisória ou painel de gesso | Com `W` ou `A` ativo, escolha "Divisória" ou "Painel" no alto da planta; para converter uma parede existente, use o campo "Tipo" no painel |
 | Inserir porta, janela ou cobogó | Clique no item da biblioteca e depois na parede (ou arraste) |
+| Aplicar piso | Clique no piso da biblioteca (categoria Pisos) e depois dentro do cômodo (ou arraste) |
+| Ver ou mudar o piso e o nome de um cômodo | Clique dentro do cômodo, fora dos móveis: o painel mostra áreas, piso, paginação, tamanho, cor e quantidade |
 | Inserir móvel | Clique no item da biblioteca e depois na planta; perto de uma parede ele encosta; `R` gira |
 | Selecionar e mover | `V`; arraste a parede, o canto, a porta ou o móvel |
 | Mover sem mudar ângulos | Segure `Shift` ou `Ctrl` ao arrastar: a parede leva junto a linha reta inteira; cantos, móveis e grupos andam só na horizontal ou vertical |

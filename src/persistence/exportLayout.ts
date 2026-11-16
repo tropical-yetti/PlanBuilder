@@ -13,13 +13,15 @@ export interface ExportOptions {
   wallLengths: boolean
   /** Nomes e áreas dos cômodos. */
   roomLabels: boolean
+  /** Pisos dos cômodos. */
+  floors: boolean
   /** Quadro de áreas abaixo do desenho. */
   areaTable: boolean
   /** Multiplicador de resolução (2 = boa para tela, 4 = boa para impressão). */
   pixelRatio: 2 | 4
 }
 
-export const DEFAULT_EXPORT: ExportOptions = { grid: false, wallLengths: true, roomLabels: true, areaTable: false, pixelRatio: 2 }
+export const DEFAULT_EXPORT: ExportOptions = { grid: false, wallLengths: true, roomLabels: true, floors: true, areaTable: false, pixelRatio: 2 }
 
 /** Margem em volta do desenho, em pixels da imagem base. */
 const MARGIN_PX = 48

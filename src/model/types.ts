@@ -102,6 +102,31 @@ export interface RoomLabel {
   labelOffset?: Point
 }
 
+/** Paginação das peças do piso (docs/PLANO.md, seção 11.1). */
+export type FloorPattern = 'grid' | 'stagger' | 'diagonal' | 'herringbone' | 'basket'
+
+/**
+ * Piso de um cômodo. Como o nome, fica preso a um ponto dentro do cômodo, não às paredes:
+ * o cômodo que contém o ponto recebe o piso.
+ */
+export interface RoomFloor {
+  id: Id
+  x: number
+  y: number
+  /** Piso da biblioteca (ex.: "floor.porcelain-60"); define o material. */
+  componentId: string
+  pattern: FloorPattern
+  /** Peça em cm: largura e comprimento (réguas e tacos: comprimento ao longo das fiadas). */
+  width: number
+  length: number
+  /** Junta (rejunte) entre peças, em cm. */
+  joint: number
+  /** Cor das peças (#rrggbb). */
+  color: string
+  /** Direção das fiadas em graus (0 ou 90). */
+  rotation: number
+}
+
 export interface ProjectSettings {
   gridSize: number
   defaultWallThickness: number
@@ -128,4 +153,6 @@ export interface Project {
   dimensions: Record<Id, Dimension>
   texts: Record<Id, TextNote>
   roomLabels: Record<Id, RoomLabel>
+  /** Pisos dos cômodos. */
+  floors: Record<Id, RoomFloor>
 }

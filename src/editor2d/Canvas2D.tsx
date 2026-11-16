@@ -47,6 +47,7 @@ export function Canvas2D() {
   const hover = useInteractionStore((s) => s.hover)
   const highlightRoom = useInteractionStore((s) => s.highlightRoom)
   const renamingKey = useEditorStore((s) => s.renamingRoom)
+  const selectedRoom = useEditorStore((s) => s.selectedRoom)
   const layers = useEditorStore((s) => s.layers)
   const textEdit = useEditorStore((s) => s.textEdit)
   const rooms = quantities(project).rooms
@@ -213,8 +214,10 @@ export function Canvas2D() {
     const p = useProjectStore.getState().project
     const hit = hitTest(p, i.world, state.view.scale, { nodes: false, includeLocked: true })
     if (hit && !state.selection.includes(hit.id)) state.setSelection([hit.id])
-    if (!hit) state.setSelection([])
-    state.setContextMenu({ page: { x: e.clientX, y: e.clientY }, world: i.world, id: hit?.id ?? null, roomKey: hit ? null : (roomAt(p, i.world)?.key ?? null) })
+    const roomKey = hit ? null : (roomAt(p, i.world)?.key ?? null)
+    // Fora de objetos, o botão direito seleciona o cômodo (o painel mostra o piso dele).
+    if (!hit) state.setSelectedRoom(roomKey)
+    state.setContextMenu({ page: { x: e.clientX, y: e.clientY }, world: i.world, id: hit?.id ?? null, roomKey })
   }
 
   const hoverColor = toolId === 'erase' ? C.wallErase : C.wallHover
@@ -244,13 +247,13 @@ export function Canvas2D() {
           {/* Poucas camadas (cada uma é um canvas): fundo, paredes, objetos e sobreposições. */}
           <Layer listening={false}>
           {layers.grid && <GridLayer view={view} width={size.width} height={size.height} />}
-          <RoomLayer rooms={rooms} pxPerCm={view.scale} highlighted={highlightRoom} editing={renamingRoom?.key ?? null} showLabels={layers.roomLabels} />
+          <RoomLayer rooms={rooms} pxPerCm={view.scale} highlighted={highlightRoom} editing={renamingRoom?.key ?? null} showLabels={layers.roomLabels} showFloors={layers.floors} />
           </Layer>
           <WallLayer polygons={polygons} selected={selected} hovered={hoveredWall} hoverColor={hoverColor} locked={lockedWalls} kinds={wallKinds} />
           <Layer listening={false}>
           {layers.items && <ItemLayer items={items} pxPerCm={view.scale} colorOf={itemColor} />}
           {layers.openings && <OpeningLayer shapes={openings} pxPerCm={view.scale} />}
-          <RoomLayer part="labels" rooms={rooms} pxPerCm={view.scale} highlighted={highlightRoom} editing={renamingRoom?.key ?? null} showLabels={layers.roomLabels} />
+          <RoomLayer part="labels" rooms={rooms} pxPerCm={view.scale} highlighted={highlightRoom} editing={renamingRoom?.key ?? null} showLabels={layers.roomLabels} selected={selectedRoom} />
           <AnnotationLayer
             project={project}
             pxPerCm={view.scale}

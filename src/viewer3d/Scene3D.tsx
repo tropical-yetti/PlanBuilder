@@ -10,6 +10,7 @@ import { wallPolygons } from '../model/wallGeometry'
 import type { Item, Opening, Project } from '../model/types'
 import { useEditorStore } from '../store/editorStore'
 import { useProjectStore } from '../store/projectStore'
+import { floorKey, floorTexture } from '../editor2d/floorTexture'
 import { buildWallPieces, type WallPiece } from './buildWalls'
 import { setCapturer } from './capture'
 
@@ -67,21 +68,66 @@ function WallMesh({ piece, selected }: { piece: WallPiece; selected: boolean }) 
   )
 }
 
+/** Texturas de piso já criadas, por especificação (pisos iguais compartilham a textura). */
+const floorTextures = new Map<string, THREE.Texture>()
+
+function floorMap(floor: NonNullable<Room['floor']>): THREE.Texture | null {
+  const key = floorKey(floor)
+  const hit = floorTextures.get(key)
+  if (hit) return hit
+  const tex = floorTexture(floor)
+  if (!tex) return null
+  const t = new THREE.CanvasTexture(tex.canvas)
+  t.wrapS = THREE.RepeatWrapping
+  t.wrapT = THREE.RepeatWrapping
+  t.colorSpace = THREE.SRGBColorSpace
+  t.anisotropy = 8
+  floorTextures.set(key, t)
+  return t
+}
+
 function FloorMesh({ room }: { room: Room }) {
-  const shapes = useMemo(
-    () =>
-      room.shape.map((poly) => {
-        const [outer, ...holes] = poly
-        const shape = toShape((outer ?? []).map(([x, y]) => ({ x, y })))
-        for (const h of holes) shape.holes.push(toShape(h.map(([x, y]) => ({ x, y }))))
-        return shape
-      }),
-    [room.shape],
-  )
+  const floor = room.floor
+  const geometry = useMemo(() => {
+    const shapes = room.shape.map((poly) => {
+      const [outer, ...holes] = poly
+      const shape = toShape((outer ?? []).map(([x, y]) => ({ x, y })))
+      for (const h of holes) shape.holes.push(toShape(h.map(([x, y]) => ({ x, y }))))
+      return shape
+    })
+    const g = new THREE.ShapeGeometry(shapes)
+    if (floor) {
+      // Coordenadas de textura em ladrilhos, a partir do ponto do piso e giradas com a paginação,
+      // exatamente como na planta. (A forma está com y invertido: y da planta = −y da forma.)
+      const tex = floorTexture(floor)
+      if (tex) {
+        const a = (-tex.tile.angle * Math.PI) / 180
+        const cos = Math.cos(a)
+        const sin = Math.sin(a)
+        const pos = g.attributes.position!
+        const uv = new Float32Array(pos.count * 2)
+        for (let i = 0; i < pos.count; i++) {
+          const dx = pos.getX(i) - floor.x
+          const dy = -pos.getY(i) - floor.y
+          const lx = dx * cos - dy * sin
+          const ly = dx * sin + dy * cos
+          uv[2 * i] = lx / tex.tile.w
+          uv[2 * i + 1] = -ly / tex.tile.h
+        }
+        g.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+      }
+    }
+    return g
+  }, [room.shape, floor])
+  useEffect(() => () => geometry.dispose(), [geometry])
+  const map = floor ? floorMap(floor) : null
   return (
-    <mesh position={[0, 0.3, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-      <shapeGeometry args={[shapes]} />
-      <meshStandardMaterial color={COLORS.floor} roughness={1} side={THREE.DoubleSide} />
+    <mesh position={[0, 0.3, 0]} rotation={[-Math.PI / 2, 0, 0]} geometry={geometry}>
+      {map ? (
+        <meshStandardMaterial key="tex" map={map} roughness={0.85} side={THREE.DoubleSide} />
+      ) : (
+        <meshStandardMaterial key="plain" color={floor?.color ?? COLORS.floor} roughness={1} side={THREE.DoubleSide} />
+      )}
     </mesh>
   )
 }

@@ -3,10 +3,11 @@
  * do documento só se usam os nomes dos cômodos (`roomLabels`). Áreas em cm², comprimentos em cm.
  */
 import { difference, union } from 'polyclip-ts'
+import { getFloor, wasteOf } from '../library/floors'
 import { getComponent } from '../library/registry'
 import { dist, midpoint, normalize, perp, pointInPolygon, scale, sub, add } from './geometry'
 import { detectFaces, type Face } from './rooms'
-import type { Id, Point, Project } from './types'
+import type { Id, Point, Project, RoomFloor } from './types'
 import { wallPolygons } from './wallGeometry'
 import { kindOf } from './walls'
 
@@ -32,6 +33,26 @@ export interface Room {
   /** Ponto dentro do cômodo, para o rótulo. */
   labelPoint: Point
   wallIds: Id[]
+  /** Piso aplicado ao cômodo. */
+  floor: RoomFloor | null
+}
+
+/** Quantitativo de um piso (mesmo componente, paginação e tamanho de peça). */
+export interface FloorSummary {
+  componentId: string
+  name: string
+  width: number
+  length: number
+  pattern: RoomFloor['pattern']
+  /** Área dos cômodos com esse piso. */
+  area: number
+  /** Perda (fração) considerada na compra. */
+  waste: number
+  /** Área com a perda. */
+  areaWithWaste: number
+  /** Peças inteiras necessárias (estimativa). */
+  pieces: number
+  rooms: string[]
 }
 
 export interface WallSide {
@@ -69,6 +90,8 @@ export interface Quantities {
   cobogo: { area: number; pieces: number }
   /** Quantidade de cada móvel. */
   itemCounts: OpeningCount[]
+  /** Pisos: área por tipo de piso, com perda e estimativa de peças. */
+  floors: FloorSummary[]
   /**
    * Divisórias (drywall) e painéis (parede falsa, painel de TV), para orçar à parte:
    * comprimento pelo eixo e área de um lado (comprimento × altura − vãos).
@@ -215,6 +238,7 @@ function compute(p: Project): Quantities {
       shape,
       labelPoint: interiorPoint(shape),
       wallIds: face.wallIds,
+      floor: null,
     })
   }
 
@@ -232,6 +256,8 @@ function compute(p: Project): Quantities {
       room.name = `Cômodo ${auto}`
     }
   }
+  const floorList = Object.values(p.floors)
+  for (const room of rooms) room.floor = floorList.find((f) => pointInMulti(f, room.shape)) ?? null
 
   // Área construída: união das paredes com as faces fechadas.
   const faceRings: Poly[] = faces.inner.map((f) => [toRing(f.polygon)])
@@ -314,10 +340,32 @@ function compute(p: Project): Quantities {
     openingCounts: [...countById].map(([componentId, count]) => ({ componentId, count })),
     cobogo,
     itemCounts: countBy(Object.values(p.items).map((it) => it.componentId)),
+    floors: floorSummaries(rooms),
     partitions,
     panels,
     wallSides,
   }
+}
+
+function floorSummaries(rooms: Room[]): FloorSummary[] {
+  const byKey = new Map<string, FloorSummary>()
+  for (const room of rooms) {
+    const f = room.floor
+    if (!f) continue
+    const key = `${f.componentId}|${f.pattern}|${f.width}|${f.length}`
+    let s = byKey.get(key)
+    if (!s) {
+      s = { componentId: f.componentId, name: getFloor(f.componentId).name, width: f.width, length: f.length, pattern: f.pattern, area: 0, waste: wasteOf(f.pattern), areaWithWaste: 0, pieces: 0, rooms: [] }
+      byKey.set(key, s)
+    }
+    s.area += room.area
+    s.rooms.push(room.name)
+  }
+  for (const s of byKey.values()) {
+    s.areaWithWaste = s.area * (1 + s.waste)
+    s.pieces = Math.ceil(s.areaWithWaste / (s.width * s.length) - 1e-9)
+  }
+  return [...byKey.values()]
 }
 
 const cache = new WeakMap<Project, Quantities>()

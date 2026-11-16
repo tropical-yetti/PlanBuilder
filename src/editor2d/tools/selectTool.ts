@@ -317,7 +317,8 @@ export function createSelectTool(): Tool {
           const ids = objectsInBox(project(), pressWorld, e.world, e.world.x < pressWorld.x)
           editor().setSelection(e.shift ? [...new Set([...editor().selection, ...ids])] : ids)
         } else if (!e.shift) {
-          editor().setSelection([])
+          // Clique sem arrastar fora de objetos: seleciona o cômodo, se houver (nome, áreas e piso no painel).
+          editor().setSelectedRoom(roomAt(project(), e.world)?.key ?? null)
         }
       }
       end()

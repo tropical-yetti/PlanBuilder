@@ -1,4 +1,5 @@
 /** Projeto de exemplo oferecido na primeira abertura: uma casa pequena para explorar o app. */
+import { getFloor } from '../library/floors'
 import { getItem } from '../library/registry'
 import { addItem, snapToWall } from './items'
 import { addOpening } from './openings'
@@ -27,6 +28,11 @@ function place(p: Project, at: Point, componentId: string, width: number, height
 function label(p: Project, x: number, y: number, name: string) {
   const id = newId()
   p.roomLabels[id] = { id, x, y, name }
+}
+
+function floor(p: Project, x: number, y: number, componentId: string, rotation = 0) {
+  const id = newId()
+  p.floors[id] = { id, x, y, componentId, ...getFloor(componentId).defaults, rotation }
 }
 
 export function createSampleProject(): Project {
@@ -94,5 +100,10 @@ export function createSampleProject(): Project {
   label(p, 625, 170, 'Quarto')
   label(p, 625, 475, 'Cozinha')
   label(p, 120, 490, 'Banheiro')
+
+  floor(p, 220, 180, 'floor.vinyl-planks')
+  floor(p, 625, 170, 'floor.taco-herringbone')
+  floor(p, 625, 475, 'floor.porcelain-60')
+  floor(p, 120, 490, 'floor.ceramic-diagonal')
   return p
 }
