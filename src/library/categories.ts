@@ -18,6 +18,6 @@ export const CATEGORIES: Category[] = [
   { id: 'furniture', name: 'Móveis', available: true },
   { id: 'kitchen', name: 'Cozinha e lavanderia', available: true },
   { id: 'appliances', name: 'Eletrodomésticos', available: true },
+  { id: 'bathroom', name: 'Banheiro', available: true },
   { id: 'floors', name: 'Pisos', available: true },
-  { id: 'bathroom', name: 'Banheiro', available: false },
 ]

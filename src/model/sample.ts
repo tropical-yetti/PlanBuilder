@@ -96,6 +96,12 @@ export function createSampleProject(): Project {
   furniture('kitchen.wall-cabinet', { x: 780, y: 395 })
   furniture('appliance.dishwasher-14', { x: 760, y: 385 })
 
+  // banheiro: box de canto, bacia na parede da esquerda e gabinete sob a janela
+  const shower = getItem('bathroom.shower')
+  addItem(p, { componentId: shower.id, x: 52.5, y: 432.5, rotation: 0, width: 90, depth: 90, height: shower.defaults.height, mirrored: false, params: { layout: 'corner' } })
+  furniture('bathroom.toilet-tank', { x: 30, y: 545 })
+  furniture('bathroom.vanity', { x: 150, y: 575 })
+
   label(p, 220, 180, 'Sala')
   label(p, 625, 170, 'Quarto')
   label(p, 625, 475, 'Cozinha')

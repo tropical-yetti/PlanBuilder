@@ -46,6 +46,7 @@ const MATERIALS: Record<Exclude<Material, 'glass'>, string> = {
   dark: '#2b2f36',
   cabinet: '#f4f2ee',
   stone: '#8e8a86',
+  porcelain: '#fbfbf9',
 }
 
 /** Contorno em planta → forma do three. O y da planta vira o z da cena (por isso o sinal trocado). */
@@ -137,7 +138,7 @@ function BoxMesh({ b }: { b: Box3 }) {
     b.mat === 'glass' ? (
       <meshStandardMaterial color={COLORS.glass} transparent opacity={0.4} roughness={0.1} side={THREE.DoubleSide} />
     ) : (
-      <meshStandardMaterial color={MATERIALS[b.mat]} roughness={b.mat === 'metal' ? 0.5 : 0.85} side={THREE.DoubleSide} />
+      <meshStandardMaterial color={MATERIALS[b.mat]} roughness={b.mat === 'metal' ? 0.5 : b.mat === 'porcelain' ? 0.3 : 0.85} side={THREE.DoubleSide} />
     )
   const px = b.pivot?.x ?? 0
   const pz = b.pivot?.z ?? 0

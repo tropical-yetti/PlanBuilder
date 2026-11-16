@@ -16,9 +16,10 @@ O MVP (fases 0 a 7 da seção 9) está implementado. Do roadmap da seção 11 (v
 - **Gabinetes de cozinha e lavanderia** (categoria "Cozinha e lavanderia"): gabinete de pia, balcão, armários aéreos, gabinete com tanque e armário alto.
 
 - **Tipos de parede** (seção 11.2): alvenaria, divisória e painel.
+- **Louças de banheiro:** bacias (caixa acoplada e suspensa), bidê, lavatório de coluna, gabinete com cuba, box e banheira.
 - **Pisos por cômodo** (seção 11.1): 8 pisos na biblioteca (madeira, vinílico, cerâmica e porcelanato), 5 paginações, painel do cômodo, planta, 3D, PNG e quantitativos.
 
-Faltam da v1.0: louças de banheiro, agrupar, imagem de fundo para decalcar e PDF em escala.
+Faltam da v1.0: agrupar, imagem de fundo para decalcar e PDF em escala.
 
 Diferenças em relação ao que este plano previa:
 

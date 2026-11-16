@@ -54,6 +54,8 @@ export type Material =
   | 'cabinet'
   /** Pedra do tampo (granito). */
   | 'stone'
+  /** Louça sanitária (branca e lisa). */
+  | 'porcelain'
   /** Vidro escuro / ferro fundido (mesa do fogão, porta do forno). */
   | 'dark'
 
